@@ -1,0 +1,9 @@
+# Build a static musl binary linked with the rust-lld shipped in the toolchain,
+# so no system C compiler/linker is required. On a machine with `cc` installed
+# this file can be deleted and the default target used instead.
+[build]
+target = "x86_64-unknown-linux-musl"
+
+[target.x86_64-unknown-linux-musl]
+linker = "scripts/rust-lld.sh"
+rustflags = ["-C", "linker-flavor=ld.lld", "-C", "link-self-contained=yes", "-C", "target-cpu=native"]
