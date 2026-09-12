@@ -5,7 +5,10 @@
 //! matrices, runs each universe for a fixed number of steps, and tallies the
 //! resulting behaviour signatures. See `README.md` for the model.
 
+pub mod exact;
+pub mod experiments;
 pub mod matrix;
 pub mod multiverse;
+pub mod parallel;
 pub mod rng;
 pub mod universe;

@@ -1,0 +1,175 @@
+model sign, size 3: 387420489 reduced universes (68719476736 bit matrices) in 527.58s on 8 threads
+
+fate          reduced universes        bit-matrix weighted
+  cycle             3684504   0.95%              362676240   0.53%
+  fixed            27800807   7.18%             7345459384  10.69%
+  helix             5025024   1.30%              420144840   0.61%
+  ray             350630026  90.50%            60545608896  88.11%
+  spiral             280128   0.07%               45587376   0.07%
+
+10-step heuristic verdict vs exact fate (bit-matrix weighted):
+  heuristic              fixed           cycle             ray           helix          spiral       undecided
+  terminated             5.53%           0.00%           0.00%           0.00%           0.00%           0.00%
+  bounded                5.12%           0.43%           0.01%           0.05%           0.00%           0.00%
+  growth                 0.03%           0.10%          88.10%           0.56%           0.07%           0.00%
+
+cycle periods (reduced universes):
+  period    2: 815640
+  period    3: 236352
+  period    4: 1085184
+  period    5: 198432
+  period    6: 220800
+  period    7: 163272
+  period    8: 121776
+  period    9: 85248
+  period   10: 128520
+  period   11: 66096
+  period   12: 69792
+  period   13: 56808
+  period   14: 63504
+  period   15: 38832
+  period   16: 37296
+  period   17: 31632
+  period   18: 29640
+  period   19: 23472
+  period   20: 26208
+  period   21: 15696
+  period   22: 15792
+  period   23: 11952
+  period   24: 11712
+  period   25: 9792
+  period   26: 11088
+  period   27: 6672
+  period   28: 6576
+  period   29: 8592
+  period   30: 5520
+  period   31: 5856
+  period   32: 5952
+  period   33: 4656
+  period   34: 4512
+  period   35: 3264
+  period   36: 3360
+  period   37: 2448
+  period   38: 3744
+  period   39: 4320
+  period   40: 2256
+  period   41: 3504
+  period   42: 2976
+  period   43: 2016
+  period   44: 2304
+  period   45: 2736
+  period   46: 1920
+  period   47: 1728
+  period   48: 1248
+  period   49: 720
+  period   50: 1680
+  period   51: 768
+  period   52: 1104
+  period   53: 1008
+  period   54: 1056
+  period   55: 576
+  period   56: 528
+  period   57: 432
+  period   58: 480
+  period   59: 816
+  period   60: 528
+  period   61: 528
+  period   62: 384
+  period   63: 432
+  period   64: 480
+  period   65: 288
+  period   66: 432
+  period   67: 528
+  period   68: 384
+  period   69: 336
+  period   70: 576
+  period   71: 336
+  period   72: 240
+  period   73: 144
+  period   74: 192
+  period   75: 624
+  period   76: 432
+  period   77: 240
+  period   78: 144
+  period   79: 96
+  period   80: 240
+  period   81: 96
+  period   82: 48
+  period   83: 192
+  period   84: 192
+  period   85: 144
+  period   86: 288
+  period   87: 144
+  period   88: 192
+  period   89: 144
+  period   90: 96
+  period   91: 240
+  period   92: 240
+  period   93: 192
+  period   94: 192
+  period   95: 144
+  period   96: 48
+  period   97: 48
+  period   98: 240
+  period   99: 192
+  period  100: 144
+  period  101: 96
+  period  102: 96
+  period  104: 144
+  period  105: 96
+  period  106: 144
+  period  107: 48
+  period  108: 144
+  period  109: 48
+  period  110: 48
+  period  111: 48
+  period  113: 48
+  period  114: 144
+  period  115: 48
+  period  116: 96
+  period  117: 96
+  period  119: 48
+  period  120: 48
+  period  122: 48
+  period  123: 48
+  period  125: 48
+  period  126: 144
+  period  128: 192
+  period  130: 48
+  period  131: 48
+  period  134: 48
+  period  135: 48
+  period  136: 96
+  period  140: 96
+  period  141: 48
+  period  142: 48
+  period  143: 48
+  period  148: 144
+  period  151: 48
+  period  152: 48
+  period  155: 48
+  period  156: 96
+  period  160: 48
+  period  162: 48
+  period  164: 96
+  period  176: 48
+  period  178: 96
+  period  179: 48
+  period  184: 48
+  period  213: 48
+  period  214: 96
+  period  232: 48
+  period  233: 48
+  period  256: 48
+  period  270: 48
+  period  286: 48
+  period  320: 48
+  period  351: 48
+  period  367: 48
+  period 1510: 48
+  longest transient+period: 1824 (reduced index 7894996)
+
+fixed/ray/helix certified: 382336017 of 383455857 by step 10, latest at step 668
+
+spiral examples (reduced indices): [116065, 116299, 136399, 144965, 144968, 144971, 144974, 144977, 144980, 149518]
+exit 0

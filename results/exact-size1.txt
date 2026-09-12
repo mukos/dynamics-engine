@@ -1,0 +1,13 @@
+model sign, size 1: 9 reduced universes (16 bit matrices) in 0.00s on 1 threads
+
+fate          reduced universes        bit-matrix weighted
+  fixed                   5  55.56%                     10  62.50%
+  ray                     4  44.44%                      6  37.50%
+
+10-step heuristic verdict vs exact fate (bit-matrix weighted):
+  heuristic              fixed           cycle             ray           helix          spiral       undecided
+  terminated            62.50%           0.00%           0.00%           0.00%           0.00%           0.00%
+  bounded                0.00%           0.00%           0.00%           0.00%           0.00%           0.00%
+  growth                 0.00%           0.00%          37.50%           0.00%           0.00%           0.00%
+
+fixed/ray/helix certified: 9 of 9 by step 10, latest at step 1

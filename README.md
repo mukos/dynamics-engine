@@ -5,13 +5,21 @@ in Rust with no dependencies.
 
 ```bash
 cargo run --release -- --size 2          # every 4x4 matrix (65 536 universes), instant
-cargo run --release -- --size 3          # every 6x6 matrix (2^36 universes), ~30 min on 8 cores
+cargo run --release -- --size 3          # every 6x6 matrix (2^36 universes), ~40 min on 8 cores
 cargo run --release -- --size 4 --samples 100000000 --seed 1   # 2^64 matrices: sample instead
+cargo run --release -- exact --size 3    # exact fates of all 3^18 reduced universes, ~15 min
+cargo run --release -- basins --size 2   # exact fates over all start states per universe
+cargo run --release -- orbits --size 4   # symmetry orbit counts
+cargo run --release -- show --size 3 --index 27411247   # one universe's event trajectory
 cargo test
 ```
 
-`cargo run --release -- --help` lists all options. Results are printed as a
-histogram of *signatures* (see below), or as JSON with `--json`.
+`cargo run --release -- --help` lists all commands and options. `run` (the
+default) prints the original 10-step *signature* histogram (see below) or JSON
+with `--json`. `exact`, `basins`, `orbits` and `show` are the research tools
+described in [docs/theory.md](docs/theory.md): the model reduces to
+`v(t+1) = v(t) + d(sign v(t))`, whose fates (fixed, cycle, ray, helix, spiral)
+can be certified without a step limit. Computed results live in `results/`.
 
 ## The model
 
@@ -61,6 +69,18 @@ For `N ≥ 4` use `--samples <n> --seed <s>` (reproducible random matrices).
 Exhaustive runs can be sharded across machines with `--offset i --stride k`
 (`i` in `0..k`); sum the JSON outputs to merge.
 
+## What is known (short version)
+
+* Only the differences `M[r][2e] − M[r][2e+1]` matter: `2^(4N²)` matrices
+  collapse to `3^(2N²)` reduced universes (177× fewer at N=3).
+* Fates can be proven exactly: at N=3, 99.9 % of reduced universes are certified
+  fixed / cycle / ray / helix; the rest are empirically diverging spirals.
+* Fates are invariant under signed permutations of elements (group of order
+  `2^N N!`); the 10-step heuristic misclassifies ~0.2 % of matrices at N=3.
+* The fate depends on the start state for ~75 % of universes; only ~13 % (N=2)
+  and ~2.4 % (N=3) are bounded from every start.
+* Full analysis, tables, literature and open questions: [docs/theory.md](docs/theory.md).
+
 ## Known quirks (kept for compatibility)
 
 * **Classifier skips the previous step.** The final snapshot is compared with
@@ -74,12 +94,17 @@ Exhaustive runs can be sharded across machines with `--offset i --stride k`
 ## Layout
 
 ```
-src/universe.rs    one universe: activation, evaluation, classification
+src/universe.rs    one universe: activation, evaluation, 10-step classification
 src/matrix.rs      index <-> matrix decoding, random matrices
 src/multiverse.rs  exhaustive / sampled runs, threading, progress, tallies
-src/main.rs        command-line interface
+src/exact.rs       reduced model, event-driven exact analysis, certificates, symmetry group
+src/experiments.rs censuses (exact fates vs heuristic), basins, clamped variant
+src/parallel.rs    fork-join helper
+src/main.rs        command-line interface (run / exact / basins / orbits / show)
 src/rng.rs         SplitMix64 (deterministic sampling)
-tests/             unit tests and the size-2 regression histogram
+tests/             unit tests, the size-2 regression histogram, certificate tests
+results/           computed histograms and censuses
+docs/theory.md     mathematical analysis and findings
 docs/entity-sketch.ts  earlier design sketch (Entity/Action/Event/Cause), not built
 ```
 

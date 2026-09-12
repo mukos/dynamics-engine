@@ -1,0 +1,14 @@
+model clamped, size 3: 19683 reduced universes (262144 bit matrices) in 0.00s on 2 threads
+
+fate          reduced universes        bit-matrix weighted
+  cycle                 153   0.78%                    609   0.23%
+  fixed                8012  40.71%                 126627  48.30%
+  helix                  81   0.41%                    315   0.12%
+  ray                 11437  58.11%                 134593  51.34%
+
+cycle periods (reduced universes):
+  period    2: 135
+  period    3: 18
+  longest transient+period: 5 (reduced index 1536)
+
+fixed/ray/helix certified: 19530 of 19530 by step 10, latest at step 5

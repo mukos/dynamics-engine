@@ -1,0 +1,37 @@
+model clamped, size 4: 43046721 reduced universes (4294967296 bit matrices) in 6.49s on 2 threads
+
+fate          reduced universes        bit-matrix weighted
+  cycle              377184   0.88%               15845340   0.37%
+  fixed            12521834  29.09%             1530172293  35.63%
+  helix              545020   1.27%               19674288   0.46%
+  ray              29597859  68.76%             2729006191  63.54%
+  spiral               4824   0.01%                 269184   0.01%
+
+cycle periods (reduced universes):
+  period    2: 224832
+  period    3: 50220
+  period    4: 62580
+  period    5: 15384
+  period    6: 14112
+  period    7: 3324
+  period    8: 2748
+  period    9: 1632
+  period   10: 720
+  period   11: 408
+  period   12: 480
+  period   13: 168
+  period   14: 144
+  period   15: 168
+  period   16: 48
+  period   17: 48
+  period   18: 48
+  period   20: 24
+  period   23: 24
+  period   28: 24
+  period   39: 24
+  period   47: 24
+  longest transient+period: 54 (reduced index 4679752)
+
+fixed/ray/helix certified: 42653313 of 42664713 by step 10, latest at step 25
+
+spiral examples (reduced indices): [1136761, 1136788, 1136815, 1138948, 1138975, 1161721, 1161748, 1161775, 1163908, 1163935]

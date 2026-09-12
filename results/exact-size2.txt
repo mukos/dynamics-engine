@@ -1,0 +1,21 @@
+model sign, size 2: 6561 reduced universes (65536 bit matrices) in 0.01s on 1 threads
+
+fate          reduced universes        bit-matrix weighted
+  cycle                  88   1.34%                    352   0.54%
+  fixed                1485  22.63%                  19540  29.82%
+  ray                  4988  76.02%                  45644  69.65%
+
+10-step heuristic verdict vs exact fate (bit-matrix weighted):
+  heuristic              fixed           cycle             ray           helix          spiral       undecided
+  terminated            24.10%           0.00%           0.00%           0.00%           0.00%           0.00%
+  bounded                5.71%           0.44%           0.00%           0.00%           0.00%           0.00%
+  growth                 0.00%           0.10%          69.65%           0.00%           0.00%           0.00%
+
+cycle periods (reduced universes):
+  period    2: 64
+  period    5: 8
+  period    7: 8
+  period   10: 8
+  longest transient+period: 16 (reduced index 613)
+
+fixed/ray/helix certified: 6473 of 6473 by step 10, latest at step 5

@@ -1,0 +1,45 @@
+size 3: 200000 reduced universes x 26 starts in [-1, 1]^3 in 2.33s
+
+fate over all (universe, start) pairs:
+  cycle             80965   1.56%
+  fixed            624411  12.01%
+  helix             90747   1.75%
+  ray             4399165  84.60%
+  spiral             3865   0.07%
+  undecided           847   0.02%
+
+distinct fate kinds per universe across starts:
+  1 kind(s):      54627  27.31%
+  2 kind(s):     130735  65.37%
+  3 kind(s):      13739   6.87%
+  4 kind(s):        899   0.45%
+
+fate-kind sets:
+  fixed+ray                                    124591  62.30%
+  ray                                           51433  25.72%
+  cycle+fixed+ray                                7364   3.68%
+  fixed+helix+ray                                6015   3.01%
+  fixed                                          2652   1.33%
+  helix+ray                                      2474   1.24%
+  cycle+fixed                                    1942   0.97%
+  cycle+ray                                       942   0.47%
+  cycle+fixed+helix+ray                           856   0.43%
+  fixed+helix                                     690   0.34%
+  cycle                                           278   0.14%
+  helix                                           264   0.13%
+  cycle+fixed+helix                               138   0.07%
+  cycle+helix+ray                                  92   0.05%
+  fixed+spiral+undecided                           83   0.04%
+  cycle+helix                                      50   0.03%
+  fixed+ray+spiral+undecided                       39   0.02%
+  spiral+undecided                                 30   0.01%
+  ray+spiral+undecided                             28   0.01%
+  fixed+ray+spiral                                 16   0.01%
+  ray+spiral                                       12   0.01%
+  fixed+ray+undecided                               3   0.00%
+  cycle+fixed+ray+spiral                            2   0.00%
+  ray+undecided                                     2   0.00%
+  cycle+ray+spiral+undecided                        1   0.00%
+  fixed+spiral                                      1   0.00%
+  fixed+undecided                                   1   0.00%
+  helix+ray+spiral+undecided                        1   0.00%

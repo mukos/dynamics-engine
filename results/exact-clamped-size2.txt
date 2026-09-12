@@ -1,0 +1,7 @@
+model clamped, size 2: 81 reduced universes (256 bit matrices) in 0.00s on 2 threads
+
+fate          reduced universes        bit-matrix weighted
+  fixed                  46  56.79%                    161  62.89%
+  ray                    35  43.21%                     95  37.11%
+
+fixed/ray/helix certified: 81 of 81 by step 10, latest at step 2

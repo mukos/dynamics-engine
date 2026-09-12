@@ -1,0 +1,21 @@
+size 2: 6561 reduced universes x 48 starts in [-3, 3]^2 in 0.04s
+
+fate over all (universe, start) pairs:
+  cycle              4112   1.31%
+  fixed             99800  31.69%
+  ray              210920  66.97%
+  spiral               96   0.03%
+
+distinct fate kinds per universe across starts:
+  1 kind(s):       1491  22.73%
+  2 kind(s):       4930  75.14%
+  3 kind(s):        140   2.13%
+
+fate-kind sets:
+  fixed+ray                                      4748  72.37%
+  ray                                             815  12.42%
+  fixed                                           644   9.82%
+  cycle+fixed                                     182   2.77%
+  cycle+fixed+ray                                 140   2.13%
+  cycle                                            30   0.46%
+  spiral                                            2   0.03%
