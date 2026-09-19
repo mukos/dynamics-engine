@@ -227,3 +227,14 @@ fn index_is_inverse_of_from_index() {
     }
     assert_eq!(Reduced::<2>::from_index(613).index(), 613);
 }
+
+#[test]
+fn increment_walks_index_order() {
+    let mut w = Reduced::<2>::from_index(0);
+    for i in 1..Reduced::<2>::count() as u64 {
+        assert!(w.increment());
+        assert_eq!(w, Reduced::<2>::from_index(i), "at {i}");
+    }
+    assert!(!w.increment());
+    assert_eq!(w, Reduced::<2>::from_index(0));
+}

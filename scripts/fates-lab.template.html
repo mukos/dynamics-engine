@@ -1,0 +1,417 @@
+<meta charset="utf-8">
+<title>Fate Lab</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#F3F5F8; --panel:#FFFFFF; --ink:#1B2430; --ink-2:#4A5666; --ink-3:#7B8794;
+  --lattice:#E3E7EC; --axis:#9AA6B4; --edge:#CBD2DA; --hi:#FFF4D6; --hi-edge:#E5B84A;
+  --fixed:#3B5BDB; --cycle:#0B8A7A; --ray:#C27400; --helix:#8E44AD; --spiral:#C92A2A;
+  --start:#1B2430; --tab:#E6EAEF;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#12161B; --panel:#1A2027; --ink:#E7ECF2; --ink-2:#B4BEC9; --ink-3:#7F8B98;
+    --lattice:#242C35; --axis:#5C6977; --edge:#2E3740; --hi:#2A2410; --hi-edge:#B08A2E;
+    --fixed:#7A93F0; --cycle:#3FC2B0; --ray:#E9A03A; --helix:#C58BE0; --spiral:#F06A6A;
+    --start:#E7ECF2; --tab:#232B34;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#12161B; --panel:#1A2027; --ink:#E7ECF2; --ink-2:#B4BEC9; --ink-3:#7F8B98;
+  --lattice:#242C35; --axis:#5C6977; --edge:#2E3740; --hi:#2A2410; --hi-edge:#B08A2E;
+  --fixed:#7A93F0; --cycle:#3FC2B0; --ray:#E9A03A; --helix:#C58BE0; --spiral:#F06A6A;
+  --start:#E7ECF2; --tab:#232B34;
+}
+html{background:var(--paper)}
+body{background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding:32px 24px 56px}
+header{display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:18px}
+.controls{flex-wrap:wrap}
+h1{font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:38px;line-height:1.05;margin:0;letter-spacing:-.01em}
+header p{margin:6px 0 0;color:var(--ink-2);max-width:66ch}
+.controls{display:flex;gap:14px;align-items:center;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px;color:var(--ink-2)}
+.controls button,.tabs button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--edge);border-radius:4px;padding:6px 12px;cursor:pointer}
+.controls button:focus-visible,.tabs button:focus-visible{outline:2px solid var(--hi-edge);outline-offset:2px}
+.controls button:disabled{opacity:.45;cursor:default}
+.controls input[type=range]{width:120px;accent-color:var(--ink-2)}
+.seg{display:inline-flex}
+.seg button{border-radius:0}
+.seg button:first-child{border-radius:4px 0 0 4px}
+.seg button:last-child{border-radius:0 4px 4px 0;border-left:none}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--edge);margin:10px 0 22px}
+.tabs button{border-bottom:none;border-radius:6px 6px 0 0;padding:10px 18px;font-family:"Fraunces",Georgia,serif;font-size:19px;background:var(--tab);color:var(--ink-2)}
+.tabs button[aria-selected=true]{background:var(--panel);color:var(--ink);position:relative;top:1px}
+.census{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin-bottom:26px}
+.stat{background:var(--panel);border:1px solid var(--edge);border-radius:6px;padding:12px 14px;border-top:3px solid var(--c)}
+.stat .k{font-family:"Fraunces",Georgia,serif;font-size:19px;color:var(--c);font-weight:600;line-height:1}
+.stat .n{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:18px;margin-top:8px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.stat .p{font-size:12.5px;color:var(--ink-3)}
+.note{font-size:13px;color:var(--ink-3);margin:-14px 0 30px}
+h2{font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:24px;margin:0 0 4px}
+.sub{color:var(--ink-2);margin:0 0 16px;max-width:76ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:6px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:8px;position:relative}
+.card.rare{background:var(--hi);border-color:var(--hi-edge)}
+.card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-family:"Fraunces",Georgia,serif;font-weight:600;font-size:17px;line-height:1;color:var(--c)}
+.chip+.chip::before{content:"+";color:var(--ink-3);font-family:"IBM Plex Sans",sans-serif;font-weight:400;margin:0 6px 0 0}
+.count{text-align:right;font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;line-height:1.2}
+.count b{font-size:20px;font-weight:500;display:block}
+.klass{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px;color:var(--ink-2);margin-top:2px}
+.rowhead{grid-column:1/-1;display:flex;align-items:baseline;gap:14px;margin-top:14px;padding-top:12px;border-top:1px solid var(--edge)}
+.rowhead .name{font-family:"Fraunces",Georgia,serif;font-size:24px;font-weight:600;color:var(--c)}
+.rowhead .desc{color:var(--ink-2);font-size:13.5px}
+.badge.typical{background:var(--edge);color:var(--ink)}
+.count span{font-size:11.5px;color:var(--ink-3)}
+.badge{position:absolute;top:-9px;left:12px;background:var(--hi-edge);color:#1B2430;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:3px}
+.stage{position:relative}
+canvas{width:100%;aspect-ratio:1/1;display:block;border-radius:4px;background:var(--paper)}
+.playbtn{position:absolute;right:10px;bottom:10px;width:44px;height:44px;border-radius:50%;border:1px solid var(--edge);background:var(--panel);color:var(--ink);cursor:pointer;display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.playbtn:hover{border-color:var(--ink-3)}
+.playbtn:focus-visible{outline:2px solid var(--hi-edge);outline-offset:2px}
+.playbtn svg{width:18px;height:18px;fill:currentColor}
+.meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 12px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;color:var(--ink-3)}
+.meta span:first-child{color:var(--ink-2)}
+.starts{font-size:12.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:2px}
+.starts i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:7px;vertical-align:middle;font-style:normal}
+.starts code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;color:var(--ink)}
+@media (prefers-reduced-motion: reduce){ .hint{display:none} }
+</style>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Fate Lab</h1>
+    <p>Every card is one reduced universe simulated live from the zero state: the first step fires every channel, then the state evolves on its own. Press a card's play button to run it. Portrait plots the state in the plane; Waves plots every coordinate against time (one dash pattern per coordinate, see each chart's legend); Radial wraps time around the circle, one turn per 60 steps, with the radius as the size of the state (thick: ‖v‖, thin: each |v<sub>e</sub>|).</p>
+  </div>
+  <div class="controls">
+    <span class="seg" role="group" aria-label="view"><button id="mode-portrait" aria-pressed="true">Portrait</button><button id="mode-waves" aria-pressed="false">Waves</button><button id="mode-radial" aria-pressed="false">Radial</button></span>
+    <button id="play">Play all</button>
+    <button id="pause">Pause all</button>
+    <label>speed <input id="speed" type="range" min="1" max="60" value="12" aria-label="steps per second"></label>
+    <span id="spd">12 steps/s</span>
+    <button id="restart">Restart all</button>
+  </div>
+</header>
+<div class="tabs" role="tablist">
+  <button role="tab" aria-selected="true" data-size="2">Size 2</button>
+  <button role="tab" aria-selected="false" data-size="3">Size 3</button>
+  <button role="tab" aria-selected="false" data-size="4">Size 4</button>
+</div>
+<div id="page"></div>
+</div>
+<script>
+const DATA = __DATA__;
+const COLORS = {fixed:"--fixed", cycle:"--cycle", ray:"--ray", helix:"--helix", spiral:"--spiral"};
+const ORDER = ["fixed","cycle","ray","helix","spiral"];
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = n => n.toLocaleString("en-US");
+
+// ---- model ------------------------------------------------------------
+function drift(u, v){
+  const N = v.length, d = new Array(N).fill(0);
+  for (let f=0; f<N; f++){
+    const row = v[f] > 0 ? u.pos[f] : v[f] < 0 ? u.neg[f] : null;
+    if (!row) continue;
+    for (let e=0; e<N; e++) d[e] += row[e];
+  }
+  return d;
+}
+function makeRun(u, start, kind){
+  const zero = new Array(u.pos.length).fill(0);
+  return {u, kind, v: zero.slice(), path:[zero], done:false, steps:0, allFire:true, color: css(COLORS[kind])};
+}
+function fireAll(u){
+  const N = u.pos.length, d = new Array(N).fill(0);
+  for (let f=0; f<N; f++) for (let e=0; e<N; e++) d[e] += u.pos[f][e] + u.neg[f][e];
+  return d;
+}
+function stepRun(r){
+  if (r.done) return;
+  const d = r.allFire ? fireAll(r.u) : drift(r.u, r.v);
+  r.allFire = false;
+  if (d.every(x => x === 0)) { r.done = true; return; }
+  for (let e=0; e<r.v.length; e++) r.v[e] += d[e];
+  r.path.push(r.v.slice()); r.steps++;
+  if (r.path.length > 4000) r.path.shift();
+}
+
+// ---- cards ------------------------------------------------------------
+const cards = [];
+const MAX_STEPS = 420, HOLD = 40;
+function pickAxes(u, starts){
+  const N = u.pos.length; if (N === 2) return [0,1];
+  const range = new Array(N).fill(0), mn = new Array(N).fill(Infinity), mx = new Array(N).fill(-Infinity);
+  for (const s of starts){ const r = makeRun(u, s.start, s.kind); for (let i=0;i<300 && !r.done;i++) stepRun(r);
+    for (const p of r.path) for (let e=0;e<N;e++){ mn[e]=Math.min(mn[e],p[e]); mx[e]=Math.max(mx[e],p[e]); } }
+  for (let e=0;e<N;e++) range[e] = mx[e]-mn[e];
+  const idx = [...Array(N).keys()].sort((a,b)=>range[b]-range[a]).slice(0,2).sort();
+  return idx;
+}
+function classLabel(cl){
+  switch (cl.kind){
+    case "fixed": return `stops at step ${fmt(cl.param)}`;
+    case "ray": return `ray certified at step ${fmt(cl.param)}`;
+    case "cycle": return `period ${fmt(cl.param)}`;
+    case "helix": return `helix period ${fmt(cl.param)}`;
+    case "spiral": return "growing loop";
+    default: return cl.kind;
+  }
+}
+const ICON = {
+  play: '<svg viewBox="0 0 20 20"><path d="M5 3l12 7-12 7z"/></svg>',
+  pause: '<svg viewBox="0 0 20 20"><path d="M4 3h4v14H4zM12 3h4v14h-4z"/></svg>',
+};
+function setPlaying(c, on){
+  c.playing = on;
+  c.btn.innerHTML = on ? ICON.pause : ICON.play;
+  c.btn.setAttribute("aria-label", on ? "Pause" : "Play");
+  c.btn.title = on ? "Pause this universe" : "Play this universe";
+  c.btn.setAttribute("aria-pressed", on);
+  if (!on) drawCard(c);
+}
+function buildCard(cl, size, total, tag){
+  const el = document.createElement("div"); el.className = "card";
+  const pct = 100*cl.count/total;
+  if (tag === "rare") el.classList.add("rare");
+  const axes = pickAxes(cl, [{start: new Array(size).fill(0), kind: cl.kind}]);
+  el.innerHTML = `${tag ? `<span class="badge ${tag}">${tag}</span>` : ''}
+    <div class="top">
+      <div><span class="chip" style="--c:var(${COLORS[cl.kind]})">${cl.kind}</span><div class="klass">${classLabel(cl)}${2*cl.param + 80 > 3200 ? " · first 3,200 steps shown" : ""}</div></div>
+      <div class="count"><b>${fmt(cl.count)}</b><span>${pct < 0.001 ? "<0.001" : pct.toFixed(3)}% of ${DATA[String(size)].sampled ? "sample" : "universes"}</span></div>
+    </div>
+    <div class="stage"><canvas width="600" height="600" role="img" aria-label="${cl.kind} trajectory"></canvas>
+      <button class="playbtn" aria-label="Play" title="Play / pause this universe" aria-pressed="false">${ICON.play}</button></div>
+    <div class="meta"><span>universe ${cl.index}</span><span>axes (v${axes[0]}, v${axes[1]})${size>2?` of ${size}`:""}</span></div>`;
+  const maxSteps = Math.min(3200, Math.max(420, 2*cl.param + 80));
+  const c = {el, set: cl, axes, canvas: el.querySelector("canvas"), runs: [], t: 0, view: null, playing: false, maxSteps};
+  c.set.starts = [{start: new Array(size).fill(0), kind: cl.kind}];
+  c.btn = el.querySelector(".playbtn");
+  c.btn.addEventListener("click", () => setPlaying(c, !c.playing));
+  resetCard(c);
+  cards.push(c);
+  return el;
+}
+function resetCard(c){
+  c.runs = c.set.starts.map(s => makeRun(c.set, s.start, s.kind));
+  c.t = 0; c.hold = 0;
+}
+function tickCard(c){
+  if (c.t >= (c.maxSteps || MAX_STEPS) || c.runs.every(r=>r.done)) { if (++c.hold > HOLD) resetCard(c); return; }
+  c.runs.forEach(stepRun); c.t++;
+}
+let MODE = "portrait";
+const DASH = [[], [10,7], [2,5], [10,4,2,4], [4,4], [14,4,2,4,2,4]];
+const dashFor = e => DASH[e % DASH.length];
+const DASH_LABEL = ["—", "- -", "···", "-·", "- -", "-··"];
+const dashLabel = e => DASH_LABEL[e % DASH_LABEL.length];
+function drawCard(c){ if (MODE === "waves") drawWaves(c); else if (MODE === "radial") drawRadial(c); else drawPortrait(c); }
+const REV = 60;
+function drawRadial(c){
+  const cv = c.canvas, ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+  const N = c.set.pos.length, cx = W/2, cy = H/2, R = Math.min(W, H)/2 - 34;
+  const norm = p => Math.hypot(...p);
+  let rmax = 3;
+  for (const r of c.runs) for (const p of r.path) rmax = Math.max(rmax, norm(p));
+  const target = rmax * 1.12;
+  if (!c.rview) c.rview = target;
+  c.rview += (target - c.rview) * 0.15;
+  const scale = R / c.rview;
+  const pt = (t, r) => { const a = 2*Math.PI * t / REV - Math.PI/2; return [cx + Math.cos(a) * r * scale, cy + Math.sin(a) * r * scale]; };
+  ctx.clearRect(0,0,W,H); ctx.fillStyle = css("--paper"); ctx.fillRect(0,0,W,H);
+  // rings
+  const span = c.rview;
+  const rstep = span <= 12 ? 1 : span <= 40 ? 5 : span <= 120 ? 10 : span <= 600 ? 50 : span <= 3000 ? 250 : 1000;
+  ctx.font = "17px IBM Plex Mono, monospace"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+  for (let r = rstep; r <= c.rview; r += rstep){
+    ctx.strokeStyle = css("--lattice"); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, r*scale, 0, 7); ctx.stroke();
+    ctx.fillStyle = css("--ink-3"); ctx.fillText(String(r), cx + 6, cy - r*scale);
+  }
+  // spokes: quarter turns
+  for (let q = 0; q < 4; q++){
+    const [x, y] = pt(q * REV/4, c.rview); ctx.strokeStyle = css("--axis"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke();
+    const [lx, ly] = pt(q * REV/4, c.rview * 1.08); ctx.fillStyle = css("--ink-3"); ctx.textAlign = "center"; ctx.fillText("t≡" + (q * REV/4), lx, ly);
+  }
+  // traces
+  for (const r of c.runs){
+    const off = r.steps + 1 - r.path.length;
+    for (let e = N - 1; e >= -1; e--){
+      const val = p => e < 0 ? norm(p) : Math.abs(p[e]);
+      ctx.strokeStyle = r.color; ctx.lineWidth = e < 0 ? 3.5 : 1.5; ctx.setLineDash(e < 0 ? [] : (dashFor(e).length ? dashFor(e) : [6,4])); ctx.globalAlpha = e < 0 ? 0.95 : 0.55;
+      ctx.beginPath();
+      r.path.forEach((p, i) => { const [x, y] = pt(off + i, val(p)); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+      ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+    }
+    const last = r.path[r.path.length - 1]; const [hx, hy] = pt(off + r.path.length - 1, norm(last));
+    ctx.fillStyle = r.color; ctx.beginPath(); ctx.arc(hx, hy, r.done ? 8 : 6, 0, 7); ctx.fill();
+    if (r.done){
+      // A fixed point keeps its radius forever: draw the ring it would trace.
+      ctx.strokeStyle = r.color; ctx.lineWidth = 2; ctx.setLineDash([3,5]); ctx.globalAlpha = 0.6;
+      ctx.beginPath(); ctx.arc(cx, cy, norm(last) * scale, 0, 7); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+      ctx.beginPath(); ctx.arc(hx, hy, 13, 0, 7); ctx.stroke();
+    }
+  }
+  ctx.font = "22px IBM Plex Mono, monospace"; ctx.fillStyle = css("--ink-2"); ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.fillText("t = " + c.t, 12, 28);
+  ctx.font = "17px IBM Plex Mono, monospace"; ctx.fillStyle = css("--ink-3"); ctx.textAlign = "right";
+  ctx.fillText("‖v‖ —   " + [...Array(N).keys()].map(e => "|v" + e + "| " + (e === 0 ? "- -" : dashLabel(e))).join("  "), W - 12, 28);
+}
+function drawWaves(c){
+  const cv = c.canvas, ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+  const N = c.set.pos.length, WIN = 150;
+  const tEnd = Math.max(c.t, 40), tStart = Math.max(0, tEnd - WIN);
+  const ml = 64, mr = 14, mt = 40, mb = 40;
+  let y0 = 0, y1 = 0;
+  for (const r of c.runs){
+    const off = r.steps + 1 - r.path.length; // absolute step of path[0]
+    r.path.forEach((p, i) => { const t = off + i; if (t < tStart) return; for (let e=0;e<N;e++){ y0 = Math.min(y0, p[e]); y1 = Math.max(y1, p[e]); } });
+  }
+  const pad = Math.max(1, (y1 - y0) * 0.12); y0 -= pad; y1 += pad; if (y1 - y0 < 6){ const m=(y0+y1)/2; y0=m-3; y1=m+3; }
+  const target = {y0, y1};
+  if (!c.wview) c.wview = target;
+  const v = c.wview, k = 0.15; v.y0 += (target.y0 - v.y0)*k; v.y1 += (target.y1 - v.y1)*k;
+  const sx = t => ml + (t - tStart) / (tEnd - tStart) * (W - ml - mr);
+  const sy = y => mt + (v.y1 - y) / (v.y1 - v.y0) * (H - mt - mb);
+  ctx.clearRect(0,0,W,H); ctx.fillStyle = css("--paper"); ctx.fillRect(0,0,W,H);
+  // grid
+  const span = v.y1 - v.y0;
+  const ystep = span <= 12 ? 1 : span <= 40 ? 5 : span <= 120 ? 10 : span <= 600 ? 50 : span <= 3000 ? 250 : 1000;
+  ctx.font = "18px IBM Plex Mono, monospace"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let y = Math.ceil(v.y0/ystep)*ystep; y <= v.y1; y += ystep){
+    ctx.strokeStyle = y === 0 ? css("--axis") : css("--lattice"); ctx.lineWidth = y === 0 ? 2 : 1;
+    ctx.beginPath(); ctx.moveTo(ml, sy(y)); ctx.lineTo(W - mr, sy(y)); ctx.stroke();
+    if (sy(y) > mt + 12 && sy(y) < H - mb - 8){ ctx.fillStyle = css("--ink-3"); ctx.fillText(String(y), ml - 8, sy(y)); }
+  }
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  const tstep = 25;
+  for (let t = Math.ceil(tStart/tstep)*tstep; t <= tEnd; t += tstep){
+    ctx.strokeStyle = css("--lattice"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(sx(t), mt); ctx.lineTo(sx(t), H - mb); ctx.stroke();
+    ctx.fillStyle = css("--ink-3"); ctx.fillText("t=" + t, sx(t), H - mb + 8);
+  }
+  // waves
+  for (const r of c.runs){
+    const off = r.steps + 1 - r.path.length;
+    for (let e = 0; e < N; e++){
+      ctx.strokeStyle = r.color; ctx.lineWidth = 2.5; ctx.setLineDash(dashFor(e)); ctx.lineJoin = "round"; ctx.globalAlpha = 0.9;
+      ctx.beginPath(); let started = false;
+      r.path.forEach((p, i) => { const t = off + i; if (t < tStart) return; const X = sx(t), Y = sy(p[e]); started ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); started = true; });
+      ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+      const last = r.path[r.path.length - 1];
+      ctx.fillStyle = r.color; ctx.beginPath(); ctx.arc(sx(off + r.path.length - 1), sy(last[e]), r.done ? 6 : 5, 0, 7); ctx.fill();
+    }
+  }
+  ctx.font = "22px IBM Plex Mono, monospace"; ctx.fillStyle = css("--ink-2"); ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.fillText("t = " + c.t, 12, 28);
+  ctx.font = "18px IBM Plex Mono, monospace"; ctx.fillStyle = css("--ink-3"); ctx.textAlign = "right";
+  ctx.fillText([...Array(N).keys()].map(e => "v" + e + " " + dashLabel(e)).join("   "), W - mr, 28);
+}
+function drawPortrait(c){
+  const cv = c.canvas, ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+  const [ax, ay] = c.axes;
+  let x0=0,x1=0,y0=0,y1=0;
+  for (const r of c.runs) for (const p of r.path){ x0=Math.min(x0,p[ax]); x1=Math.max(x1,p[ax]); y0=Math.min(y0,p[ay]); y1=Math.max(y1,p[ay]); }
+  const span = Math.max(x1-x0, y1-y0, 6) * 1.25;
+  const cx = (x0+x1)/2, cy = (y0+y1)/2;
+  const target = {cx, cy, span};
+  if (!c.view) c.view = target;
+  const v = c.view; const k = 0.12;
+  v.cx += (target.cx-v.cx)*k; v.cy += (target.cy-v.cy)*k; v.span += (target.span-v.span)*k;
+  const sx = x => W/2 + (x - v.cx) / v.span * W;
+  const sy = y => H/2 - (y - v.cy) / v.span * H;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = css("--paper"); ctx.fillRect(0,0,W,H);
+  // lattice
+  const step = v.span <= 30 ? 1 : v.span <= 80 ? 5 : v.span <= 300 ? 10 : v.span <= 1500 ? 50 : v.span <= 8000 ? 250 : 1000;
+  const gx0 = Math.floor((v.cx - v.span/2)/step)*step, gx1 = v.cx + v.span/2;
+  const gy0 = Math.floor((v.cy - v.span/2)/step)*step, gy1 = v.cy + v.span/2;
+  ctx.lineWidth = 1;
+  for (let x=gx0; x<=gx1; x+=step){ ctx.strokeStyle = x===0 ? css("--axis") : css("--lattice"); ctx.lineWidth = x===0?2:1; ctx.beginPath(); ctx.moveTo(sx(x),0); ctx.lineTo(sx(x),H); ctx.stroke(); }
+  for (let y=gy0; y<=gy1; y+=step){ ctx.strokeStyle = y===0 ? css("--axis") : css("--lattice"); ctx.lineWidth = y===0?2:1; ctx.beginPath(); ctx.moveTo(0,sy(y)); ctx.lineTo(W,sy(y)); ctx.stroke(); }
+  ctx.font = "20px IBM Plex Mono, monospace"; ctx.fillStyle = css("--ink-3"); ctx.textAlign="left"; ctx.fillText("grid "+step, 12, H-12);
+  // paths
+  for (const r of c.runs){
+    ctx.strokeStyle = r.color; ctx.lineWidth = 3; ctx.lineJoin = "round"; ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    r.path.forEach((p,i)=>{ const X=sx(p[ax]), Y=sy(p[ay]); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); });
+    ctx.stroke(); ctx.globalAlpha = 1;
+    const s = r.path[0]; ctx.fillStyle = css("--start"); ctx.beginPath(); ctx.arc(sx(s[ax]), sy(s[ay]), 6, 0, 7); ctx.fill();
+    const h = r.v; ctx.fillStyle = r.color; ctx.beginPath(); ctx.arc(sx(h[ax]), sy(h[ay]), r.done ? 9 : 7, 0, 7); ctx.fill();
+    if (r.done){ ctx.strokeStyle = r.color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(sx(h[ax]), sy(h[ay]), 14, 0, 7); ctx.stroke(); }
+  }
+  ctx.font = "22px IBM Plex Mono, monospace"; ctx.fillStyle = css("--ink-2"); ctx.textAlign="left"; ctx.fillText("t = "+c.t, 12, 28);
+}
+
+// ---- page -------------------------------------------------------------
+const DESC = {
+  fixed: "grouped by the step at which the drift became zero",
+  cycle: "grouped by period",
+  ray: "grouped by the step at which the absorbing orthant was entered",
+  helix: "grouped by the period of the repeating segment",
+  spiral: "one class: returns with growing norm (empirical)",
+};
+function renderSize(size){
+  cards.length = 0;
+  const d = DATA[size];
+  const page = document.getElementById("page");
+  if (!d){ page.innerHTML = `<p class="sub">No census for size ${size} yet.</p>`; return; }
+  const total = d.reduced;
+  const universe = size === "4" ? "1.85 · 10<sup>15</sup>" : fmt(Number(3n ** BigInt(2*size*size)));
+  page.innerHTML = `
+    <h2>Census from zero</h2>
+    <p class="sub">${d.sampled
+      ? `Exact fates of ${fmt(total)} reduced size-${size} universes drawn uniformly at random from all ${universe} (exhaustive enumeration would take about a year at 59 million universes per second). Percentages are estimates with 95 % half-widths below 0.002 %.`
+      : `Exact fates of all ${fmt(total)} reduced size-${size} universes`}, each started at the zero state with every channel firing once.${size !== "2" ? " Spirals are the empirical class; everything else is proven." : ""}</p>
+    <div class="census">${ORDER.map(k=>`<div class="stat" style="--c:var(${COLORS[k]})"><div class="k">${k}</div><div class="n">${fmt((d.fates[k]||[0])[0])}</div><div class="p">${(100*(d.fates[k]||[0])[0]/total).toFixed(3)}% · ${d.sampled ? "estimate" : "exact"}</div></div>`).join("")}</div>
+    <h2>Typical and rarest universes</h2>
+    <p class="sub">Within each fate the census also records a finer class (period, or the step at which the certificate arrived). The first card shows the most common class, the highlighted cards the rarest ones; the count is how many ${d.sampled ? "sampled " : ""}universes fall in that class, and the universe shown is the one with the smallest index.</p>
+    <div class="grid" id="grid"></div>`;
+  const grid = document.getElementById("grid");
+  const RARE = size === "2" ? 4 : 5;
+  for (const kind of ORDER){
+    const cls = d.classes.filter(c => c.kind === kind);
+    if (!cls.length) continue;
+    const head = document.createElement("div"); head.className = "rowhead"; head.style.setProperty("--c", `var(${COLORS[kind]})`);
+    head.innerHTML = `<span class="name">${kind}</span><span class="desc">${cls.length} class${cls.length>1?"es":""} · ${DESC[kind]}</span>`;
+    grid.appendChild(head);
+    const byCount = cls.slice().sort((a,b)=>b.count-a.count);
+    const typical = byCount[0];
+    grid.appendChild(buildCard(typical, Number(size), total, "typical"));
+    const rare = byCount.slice(1).sort((a,b)=>a.count-b.count || b.param-a.param).slice(0, RARE);
+    rare.forEach(cl => grid.appendChild(buildCard(cl, Number(size), total, "rare")));
+  }
+  cards.forEach(drawCard);
+}
+document.querySelectorAll('.tabs button').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b===btn));
+  renderSize(btn.dataset.size);
+}));
+renderSize("2");
+
+// ---- animation loop ---------------------------------------------------
+let acc = 0, last = performance.now();
+const speed = document.getElementById("speed"), spd = document.getElementById("spd"), play = document.getElementById("play");
+speed.addEventListener("input", ()=> spd.textContent = speed.value + " steps/s");
+play.addEventListener("click", ()=>{ cards.forEach(c=>setPlaying(c,true)); });
+document.getElementById("pause").addEventListener("click", ()=>{ cards.forEach(c=>setPlaying(c,false)); });
+document.getElementById("restart").addEventListener("click", ()=>{ cards.forEach(c=>{ resetCard(c); drawCard(c); }); });
+for (const m of ["portrait","waves","radial"]) document.getElementById("mode-"+m).addEventListener("click", ()=>{
+  MODE = m;
+  for (const k of ["portrait","waves","radial"]) document.getElementById("mode-"+k).setAttribute("aria-pressed", k===m);
+  cards.forEach(drawCard);
+});
+function frame(now){
+  const dt = (now-last)/1000; last = now;
+  acc += dt * Number(speed.value);
+  const live = cards.filter(c=>c.playing);
+  document.getElementById("pause").disabled = live.length === 0;
+  play.disabled = cards.length > 0 && live.length === cards.length;
+  if (live.length){
+    while (acc >= 1){ live.forEach(tickCard); acc -= 1; }
+    for (const c of live){ try { drawCard(c); } catch (err) { console.error("draw failed", c.set.kind, c.set.param, err); setPlaying(c, false); } }
+  } else { acc = 0; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>

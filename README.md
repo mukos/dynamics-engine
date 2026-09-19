@@ -6,8 +6,9 @@ in Rust with no dependencies.
 ```bash
 cargo run --release -- --size 2          # every 4x4 matrix (65 536 universes), instant
 cargo run --release -- --size 3          # every 6x6 matrix (2^36 universes), ~40 min on 8 cores
+cargo run --release -- exact --size 4 --samples 2000000000   # size 4: sampled census, ~3 min
 cargo run --release -- --size 4 --samples 100000000 --seed 1   # 2^64 matrices: sample instead
-cargo run --release -- exact --size 3    # exact fates of all 3^18 reduced universes, ~15 min
+cargo run --release -- exact --size 3    # exact fates of all 3^18 reduced universes, ~7 s
 cargo run --release -- basins --size 2   # exact fates over all start states per universe
 cargo run --release -- orbits --size 4   # symmetry orbit counts
 cargo run --release -- show --size 3 --index 27411247   # one universe's event trajectory

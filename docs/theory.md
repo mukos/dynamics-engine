@@ -117,6 +117,21 @@ misclassifies about 0.2 % of size-3 bit matrices (cycles reported as growth,
 helices and rays reported as bounded), see the confusion matrix in the results
 file.
 
+Size 4, sampled (2·10^9 uniform reduced universes, 158 s; 95 % half-widths
+below 0.001 %; `results/exact-size4-sampled.txt`):
+
+| fixed | cycle | ray | helix | spiral | undecided |
+|---|---|---|---|---|---|
+| 3.02 % | 0.23 % | 95.25 % | 1.38 % | 0.12 % | 0.0001 % |
+
+The trend of §5 continues (rays 95 %), and the event-driven analyser exposes
+time scales no step-by-step simulation could reach: in the sample there is a
+cycle of period 989 403 630 (`show --size 4 --index 345302372823031`), a fixed
+point first reached at step 805 437 199, and a ray certified at step
+1 092 831 065 384 — a trajectory that crosses coordinate axes for a trillion
+steps before settling into its final orthant. Certificates cost one event
+each, so these cases take microseconds.
+
 Clamped model (create / destroy with positivity, §5):
 
 | N | reduced universes | fixed | cycle | ray | helix | spiral |
@@ -224,11 +239,20 @@ Done, in order of payoff:
 1. **Model reduction** (§1): 177× fewer universes at N=3, more at larger N.
 2. **Event jumps + certificates**: cost proportional to orthant changes, no
    step cap, and every fate but spiral is proven.
-3. **Bit rows, stack state, no allocation** in the inner loop; all cores.
+3. **No allocation in the inner loop.** The static musl build's `malloc` takes
+   a global lock, so per-universe `Vec`/`HashMap` allocations made two threads
+   *slower* than one. A reusable per-thread `Workspace` removed every
+   allocation from the hot path: the exhaustive size-3 census went from
+   527 s to 6.6 s on 8 threads (59 million universes per second), and a
+   base-3 odometer replaced per-index decoding.
 4. **Symmetry**: another 48× available at N=3 (orbit representatives via
-   `Reduced::canonical`), 384× at N=4. Not needed yet at N=3 (15 minutes),
-   necessary for anything exhaustive at N=4 (1.85·10^15 reduced universes,
-   4.8·10^12 orbits — still too many; sample instead).
+   `Reduced::canonical`), 384× at N=4. Not needed at N=3 (seconds), but the
+   only route to an exhaustive N=4: 1.85·10^15 reduced universes take about
+   a year at 59 M/s, 4.8·10^12 orbit representatives about a day — provided
+   they are *generated* canonically (orderly generation) rather than filtered,
+   since a canonical check costs 384 transforms. Until then N=4 is sampled:
+   2·10^9 samples in a few minutes give every fate to ±0.002 %
+   (`results/exact-size4-sampled.txt`).
 5. **GPU**: the per-universe work is branchy integer logic with tiny state,
    which GPUs handle well for the 10-step heuristic (2^36 matrices would take
    minutes on the RTX 3070 instead of 40). For the exact analyser the

@@ -1,0 +1,22 @@
+{
+  "model": "sign",
+  "size": 2,
+  "reduced": 6561,
+  "matrices": 65536,
+  "sampled": false,
+  "fates": {"cycle": [88, 352], "fixed": [1485, 19540], "ray": [4988, 45644]},
+  "classes": [
+    {"kind": "fixed", "param": 1, "count": 965, "index": 8, "pos": [[-1,-1],[-1,-1]], "neg": [[-1,-1],[1,1]]},
+    {"kind": "fixed", "param": 2, "count": 356, "index": 38, "pos": [[-1,-1],[-1,-1]], "neg": [[0,0],[-1,1]]},
+    {"kind": "fixed", "param": 3, "count": 124, "index": 35, "pos": [[-1,-1],[-1,-1]], "neg": [[0,-1],[1,1]]},
+    {"kind": "fixed", "param": 4, "count": 32, "index": 59, "pos": [[-1,-1],[-1,-1]], "neg": [[1,-1],[0,1]]},
+    {"kind": "fixed", "param": 5, "count": 8, "index": 617, "pos": [[-1,-1],[1,0]], "neg": [[0,1],[0,1]]},
+    {"kind": "cycle", "param": 2, "count": 64, "index": 71, "pos": [[-1,-1],[-1,-1]], "neg": [[1,0],[1,1]]},
+    {"kind": "cycle", "param": 5, "count": 8, "index": 533, "pos": [[-1,-1],[1,-1]], "neg": [[0,1],[-1,1]]},
+    {"kind": "cycle", "param": 7, "count": 8, "index": 532, "pos": [[-1,-1],[1,-1]], "neg": [[0,1],[-1,0]]},
+    {"kind": "cycle", "param": 10, "count": 8, "index": 613, "pos": [[-1,-1],[1,0]], "neg": [[0,1],[-1,0]]},
+    {"kind": "ray", "param": 1, "count": 3516, "index": 0, "pos": [[-1,-1],[-1,-1]], "neg": [[-1,-1],[-1,-1]]},
+    {"kind": "ray", "param": 2, "count": 1272, "index": 11, "pos": [[-1,-1],[-1,-1]], "neg": [[-1,0],[-1,1]]},
+    {"kind": "ray", "param": 3, "count": 200, "index": 19, "pos": [[-1,-1],[-1,-1]], "neg": [[-1,1],[-1,0]]}
+  ]
+}

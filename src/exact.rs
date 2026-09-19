@@ -105,6 +105,32 @@ impl<const N: usize> Reduced<N> {
         w
     }
 
+    /// Advance to the next index in `from_index` order without any division
+    /// (base-3 odometer; the last `neg` entry is the least significant digit).
+    /// Returns `false` when the count wraps back to zero.
+    #[inline]
+    pub fn increment(&mut self) -> bool {
+        for f in (0..N).rev() {
+            for e in (0..N).rev() {
+                if self.neg[f][e] < 1 {
+                    self.neg[f][e] += 1;
+                    return true;
+                }
+                self.neg[f][e] = -1;
+            }
+        }
+        for f in (0..N).rev() {
+            for e in (0..N).rev() {
+                if self.pos[f][e] < 1 {
+                    self.pos[f][e] += 1;
+                    return true;
+                }
+                self.pos[f][e] = -1;
+            }
+        }
+        false
+    }
+
     /// Base-3 index of this universe (inverse of [`Reduced::from_index`]).
     pub fn index(&self) -> u64 {
         self.pos
@@ -367,6 +393,27 @@ impl Default for Budget {
     }
 }
 
+/// Reusable buffers for the analysers, so a hot loop over many universes never
+/// allocates after warm-up (the static musl allocator serialises threads otherwise).
+#[derive(Default)]
+pub struct Workspace<const N: usize> {
+    log: Vec<([i64; N], u64, [i8; N])>,
+    seen: HashMap<[i64; N], u64>,
+    returns: HashMap<[i8; N], (i64, u64)>,
+}
+
+impl<const N: usize> Workspace<N> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    #[inline]
+    fn clear(&mut self) {
+        self.log.clear();
+        self.seen.clear();
+        self.returns.clear();
+    }
+}
+
 /// How many past events the helix search looks back over.
 const HELIX_WINDOW: usize = 256;
 
@@ -463,16 +510,38 @@ pub fn analyze_traced<const N: usize>(
     budget: Budget,
     trace: Trace<N>,
 ) -> Fate {
+    analyze_ws(w, start, start_step, budget, &mut Workspace::new(), trace)
+}
+
+/// Analyse the original-start trajectory reusing `ws` (allocation-free after warm-up).
+#[inline]
+pub fn analyze_universe_ws<const N: usize>(
+    w: &Reduced<N>,
+    budget: Budget,
+    ws: &mut Workspace<N>,
+) -> Fate {
+    analyze_ws(w, w.initial_state(), 1, budget, ws, &mut |_, _, _| {})
+}
+
+pub fn analyze_ws<const N: usize>(
+    w: &Reduced<N>,
+    start: [i64; N],
+    start_step: u64,
+    budget: Budget,
+    ws: &mut Workspace<N>,
+    trace: Trace<N>,
+) -> Fate {
     let mut v = start;
     let mut step = start_step;
     let mut events = 0u64;
     let mut max_norm = 0i64;
+    ws.clear();
     // Event log: (state, step, sign pattern). Short trajectories dominate, so
     // cycle detection scans the log until it is long enough to justify a map.
-    let mut log: Vec<([i64; N], u64, [i8; N])> = Vec::new();
-    let mut seen: HashMap<[i64; N], u64> = HashMap::new();
+    let log = &mut ws.log;
+    let seen = &mut ws.seen;
     // Per-pattern Poincaré sections: (last norm, consecutive growing returns).
-    let mut returns: HashMap<[i8; N], (i64, u64)> = HashMap::new();
+    let returns = &mut ws.returns;
     loop {
         let s = signum(&v);
         let d = w.drift(&s);
@@ -502,7 +571,7 @@ pub fn analyze_traced<const N: usize>(
                 period: step - first,
             };
         }
-        if let Some((ustep, norm)) = helix_shift(&log, &v, &s, |_, shift, sign| {
+        if let Some((ustep, norm)) = helix_shift(log, &v, &s, |_, shift, sign| {
             sign != 0 && shift.signum() as i8 == sign
         }) {
             return Fate::Helix {
@@ -519,7 +588,7 @@ pub fn analyze_traced<const N: usize>(
         }
         log.push((v, step, s));
         if budget.spiral_returns > 0 {
-            if let Some(f) = spiral_return(&mut returns, &s, &v, budget.spiral_returns, max_norm) {
+            if let Some(f) = spiral_return(returns, &s, &v, budget.spiral_returns, max_norm) {
                 return f;
             }
         }
@@ -612,13 +681,24 @@ pub fn analyze_clamped_traced<const N: usize>(
     budget: Budget,
     trace: Trace<N>,
 ) -> Fate {
+    analyze_clamped_ws(c, start, budget, &mut Workspace::new(), trace)
+}
+
+pub fn analyze_clamped_ws<const N: usize>(
+    c: &Clamped<N>,
+    start: [i64; N],
+    budget: Budget,
+    ws: &mut Workspace<N>,
+    trace: Trace<N>,
+) -> Fate {
     let mut v = start;
     let mut step = 1u64;
     let mut events = 0u64;
     let mut max_norm = 0i64;
-    let mut log: Vec<([i64; N], u64, [i8; N])> = Vec::new();
-    let mut seen: HashMap<[i64; N], u64> = HashMap::new();
-    let mut returns: HashMap<[i8; N], (i64, u64)> = HashMap::new();
+    ws.clear();
+    let log = &mut ws.log;
+    let seen = &mut ws.seen;
+    let returns = &mut ws.returns;
     loop {
         let d = c.drift(&v);
         trace(step, &v, &d);
@@ -650,7 +730,7 @@ pub fn analyze_clamped_traced<const N: usize>(
             };
         }
         if let Some((ustep, norm)) =
-            helix_shift(&log, &v, &support, |_, shift, sup| sup == 1 && shift > 0)
+            helix_shift(log, &v, &support, |_, shift, sup| sup == 1 && shift > 0)
         {
             return Fate::Helix {
                 step: ustep,
@@ -666,9 +746,7 @@ pub fn analyze_clamped_traced<const N: usize>(
         }
         log.push((v, step, support));
         if budget.spiral_returns > 0 {
-            if let Some(f) =
-                spiral_return(&mut returns, &support, &v, budget.spiral_returns, max_norm)
-            {
+            if let Some(f) = spiral_return(returns, &support, &v, budget.spiral_returns, max_norm) {
                 return f;
             }
         }

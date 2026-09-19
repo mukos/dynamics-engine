@@ -6,7 +6,7 @@ use system::exact::{
     analyze_clamped_traced, analyze_traced, matrix_orbits, reduced_orbits, Budget, Clamped, Reduced,
 };
 use system::experiments::{
-    basins, census_clamped, census_exhaustive, census_sampled, Basins, Census,
+    basins, census_clamped, census_exhaustive, census_sampled, class_name, Basins, Census,
 };
 use system::matrix::{enumerable, matrix_count, MAX_CHANNELS};
 use system::multiverse::{exhaustive, sample, sorted, Execution, Exhaustive, Results, Sampled};
@@ -43,6 +43,7 @@ exact / basins options:
   --model <m>       sign (original, default) or clamped (create/destroy with positivity)
   --index <i>       show: reduced-universe index (base-3 encoding, see exact.rs)
   --start <v,v,..>  show: initial state instead of the all-fire start
+  --json            basins / exact: machine-readable output with representative universes
   --no-heuristic    exact: skip the comparison with the 10-step heuristic
   --threads <n>";
 
@@ -334,11 +335,23 @@ fn cmd_exact(args: &Args, threads: usize) {
     ));
     out.push_str("\nfate          reduced universes        bit-matrix weighted\n");
     for (kind, (r, m)) in &c.fates {
+        let p = *r as f64 / c.reduced.max(1) as f64;
+        let ci = if args.samples.is_some() {
+            format!(
+                "  ±{:.4}%",
+                100.0 * 1.96 * (p * (1.0 - p) / c.reduced.max(1) as f64).sqrt()
+            )
+        } else {
+            String::new()
+        };
         out.push_str(&format!(
-            "  {kind:<10} {r:>14} {:>6.2}%   {m:>20} {:>6.2}%\n",
+            "  {kind:<10} {r:>14} {:>7.3}%{ci}   {m:>20} {:>7.3}%\n",
             pct(*r as u128, c.reduced as u128),
             pct(*m, c.matrices)
         ));
+    }
+    if args.samples.is_some() {
+        out.push_str("  (± = 95% confidence half-width of the reduced-universe fraction)\n");
     }
     if c.heuristic_available() {
         out.push_str("\n10-step heuristic verdict vs exact fate (bit-matrix weighted):\n");
@@ -392,7 +405,69 @@ fn cmd_exact(args: &Args, threads: usize) {
             c.undecided_examples
         ));
     }
+    if args.json {
+        out = census_json(args, &c);
+    }
     let _ = std::io::stdout().write_all(out.as_bytes());
+}
+
+/// Machine-readable census: fate totals and every fine class with a representative universe.
+fn census_json(args: &Args, c: &Census) -> String {
+    let rows = |m: &[Vec<i8>]| {
+        m.iter()
+            .map(|row| {
+                format!(
+                    "[{}]",
+                    row.iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(",")
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",")
+    };
+    let mut o = String::new();
+    o.push_str(&format!(
+        "{{\n  \"model\": \"{}\",\n  \"size\": {},\n  \"reduced\": {},\n  \"matrices\": {},\n  \"sampled\": {},\n",
+        args.model,
+        args.size,
+        c.reduced,
+        c.matrices,
+        args.samples.is_some()
+    ));
+    o.push_str("  \"fates\": {");
+    o.push_str(
+        &c.fates
+            .iter()
+            .map(|(k, (r, m))| format!("\"{k}\": [{r}, {m}]"))
+            .collect::<Vec<_>>()
+            .join(", "),
+    );
+    o.push_str("},\n  \"classes\": [\n");
+    let n = c.classes.len();
+    for (i, (&(kind, param), &(count, index))) in c.classes.iter().enumerate() {
+        let (pos, neg): (Vec<Vec<i8>>, Vec<Vec<i8>>) = if args.model == "clamped" {
+            with_channels!(args.size, C => {
+                let u = Clamped::<{ C / 2 }>::from_index(index);
+                (u.rows.iter().map(|r| r.to_vec()).collect(), Vec::new())
+            })
+        } else {
+            with_channels!(args.size, C => {
+                let w = Reduced::<{ C / 2 }>::from_index(index);
+                (w.pos.iter().map(|r| r.to_vec()).collect(), w.neg.iter().map(|r| r.to_vec()).collect())
+            })
+        };
+        o.push_str(&format!(
+            "    {{\"kind\": \"{}\", \"param\": {param}, \"count\": {count}, \"index\": {index}, \"pos\": [{}], \"neg\": [{}]}}{}\n",
+            class_name(kind),
+            rows(&pos),
+            rows(&neg),
+            if i + 1 < n { "," } else { "" }
+        ));
+    }
+    o.push_str("  ]\n}\n");
+    o
 }
 
 fn cmd_basins(args: &Args, threads: usize) {
@@ -434,7 +509,73 @@ fn cmd_basins(args: &Args, threads: usize) {
             pct(*n as u128, r.reduced as u128)
         ));
     }
+    if args.json {
+        out = basins_json(args, &r, starts);
+    }
     let _ = std::io::stdout().write_all(out.as_bytes());
+}
+
+fn basins_json(args: &Args, r: &Basins, starts: u64) -> String {
+    let rows = |m: &Vec<Vec<i8>>| {
+        m.iter()
+            .map(|row| {
+                format!(
+                    "[{}]",
+                    row.iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(",")
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",")
+    };
+    let mut o = String::new();
+    o.push_str(&format!(
+        "{{\n  \"size\": {},\n  \"radius\": {},\n  \"universes\": {},\n  \"starts_per_universe\": {},\n  \"sampled\": {},\n",
+        args.size,
+        args.radius,
+        r.reduced,
+        starts / r.reduced.max(1),
+        args.samples.is_some()
+    ));
+    o.push_str("  \"by_start\": {");
+    o.push_str(
+        &r.by_start
+            .iter()
+            .map(|(k, n)| format!("\"{k}\": {n}"))
+            .collect::<Vec<_>>()
+            .join(", "),
+    );
+    o.push_str("},\n  \"kind_sets\": [\n");
+    let mut sets: Vec<_> = r.kind_sets.iter().collect();
+    sets.sort_by(|a, b| a.1.cmp(b.1).then_with(|| a.0.cmp(b.0)));
+    for (i, (k, n)) in sets.iter().enumerate() {
+        let rep = &r.representatives[*k];
+        let starts = rep
+            .starts
+            .iter()
+            .map(|(v, kind, fate)| {
+                format!(
+                    "{{\"start\": [{}], \"kind\": \"{kind}\", \"fate\": \"{fate}\"}}",
+                    v.iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(",")
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        o.push_str(&format!(
+            "    {{\"kinds\": \"{k}\", \"count\": {n}, \"index\": {}, \"pos\": [{}], \"neg\": [{}], \"starts\": [{starts}]}}{}\n",
+            rep.index,
+            rows(&rep.pos),
+            rows(&rep.neg),
+            if i + 1 < sets.len() { "," } else { "" }
+        ));
+    }
+    o.push_str("  ]\n}\n");
+    o
 }
 
 fn cmd_orbits(args: &Args) {
