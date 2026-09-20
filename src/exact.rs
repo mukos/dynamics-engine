@@ -400,6 +400,10 @@ pub struct Workspace<const N: usize> {
     log: Vec<([i64; N], u64, [i8; N])>,
     seen: HashMap<[i64; N], u64>,
     returns: HashMap<[i8; N], (i64, u64)>,
+    /// Identity of the attractor reached by the last analysis: the fixed
+    /// state, the smallest event state of the cycle, the ray's drift, or the
+    /// helix shift. Empty for spirals and undecided runs.
+    pub attractor: Vec<i64>,
 }
 
 impl<const N: usize> Workspace<N> {
@@ -411,6 +415,7 @@ impl<const N: usize> Workspace<N> {
         self.log.clear();
         self.seen.clear();
         self.returns.clear();
+        self.attractor.clear();
     }
 }
 
@@ -426,7 +431,7 @@ fn helix_shift<const N: usize>(
     v: &[i64; N],
     pattern: &[i8; N],
     allowed: impl Fn(usize, i64, i8) -> bool,
-) -> Option<(u64, i64)> {
+) -> Option<(u64, [i64; N])> {
     let start = log.len().saturating_sub(HELIX_WINDOW);
     for j in (start..log.len()).rev() {
         let (u, ustep, upat) = &log[j];
@@ -443,8 +448,7 @@ fn helix_shift<const N: usize>(
                     && log[j..].iter().all(|(_, _, p)| p[e] == pattern[e]))
         });
         if ok {
-            let norm = shift.iter().map(|x| x.abs()).max().unwrap_or(0);
-            return Some((*ustep, norm));
+            return Some((*ustep, shift));
         }
     }
     None
@@ -538,15 +542,18 @@ pub fn analyze_ws<const N: usize>(
     ws.clear();
     // Event log: (state, step, sign pattern). Short trajectories dominate, so
     // cycle detection scans the log until it is long enough to justify a map.
-    let log = &mut ws.log;
-    let seen = &mut ws.seen;
-    // Per-pattern Poincaré sections: (last norm, consecutive growing returns).
-    let returns = &mut ws.returns;
+    let Workspace {
+        log,
+        seen,
+        returns,
+        attractor,
+    } = ws;
     loop {
         let s = signum(&v);
         let d = w.drift(&s);
         trace(step, &v, &d);
         if d.iter().all(|&x| x == 0) {
+            attractor.extend_from_slice(&v);
             return Fate::Fixed { step };
         }
         // Absorbing orthant: every coordinate keeps (or gains nothing against) its sign.
@@ -558,6 +565,7 @@ pub fn analyze_ws<const N: usize>(
             }
         });
         if absorbing {
+            attractor.extend_from_slice(&d);
             return Fate::Ray { step };
         }
         let first = if log.len() < 64 {
@@ -566,18 +574,26 @@ pub fn analyze_ws<const N: usize>(
             seen.get(&v).copied()
         };
         if let Some(first) = first {
+            let smallest = log
+                .iter()
+                .filter(|(_, t, _)| *t >= first)
+                .map(|(u, _, _)| *u)
+                .min()
+                .unwrap_or(v);
+            attractor.extend_from_slice(&smallest);
             return Fate::Cycle {
                 transient: first,
                 period: step - first,
             };
         }
-        if let Some((ustep, norm)) = helix_shift(log, &v, &s, |_, shift, sign| {
+        if let Some((ustep, shift)) = helix_shift(log, &v, &s, |_, shift, sign| {
             sign != 0 && shift.signum() as i8 == sign
         }) {
+            attractor.extend_from_slice(&shift);
             return Fate::Helix {
                 step: ustep,
                 period: step - ustep,
-                shift_norm: norm,
+                shift_norm: shift.iter().map(|x| x.abs()).max().unwrap_or(0),
             };
         }
         if log.len() == 64 {
@@ -696,9 +712,12 @@ pub fn analyze_clamped_ws<const N: usize>(
     let mut events = 0u64;
     let mut max_norm = 0i64;
     ws.clear();
-    let log = &mut ws.log;
-    let seen = &mut ws.seen;
-    let returns = &mut ws.returns;
+    let Workspace {
+        log,
+        seen,
+        returns,
+        attractor,
+    } = ws;
     loop {
         let d = c.drift(&v);
         trace(step, &v, &d);
@@ -707,6 +726,7 @@ pub fn analyze_clamped_ws<const N: usize>(
         let effective: [i64; N] =
             std::array::from_fn(|e| if support[e] == 1 { d[e] } else { d[e].max(0) });
         if effective.iter().all(|&x| x == 0) {
+            attractor.extend_from_slice(&v);
             return Fate::Fixed { step };
         }
         if (0..N).all(|e| {
@@ -716,6 +736,7 @@ pub fn analyze_clamped_ws<const N: usize>(
                 d[e] <= 0
             }
         }) {
+            attractor.extend_from_slice(&effective);
             return Fate::Ray { step };
         }
         let first = if log.len() < 64 {
@@ -724,18 +745,26 @@ pub fn analyze_clamped_ws<const N: usize>(
             seen.get(&v).copied()
         };
         if let Some(first) = first {
+            let smallest = log
+                .iter()
+                .filter(|(_, t, _)| *t >= first)
+                .map(|(u, _, _)| *u)
+                .min()
+                .unwrap_or(v);
+            attractor.extend_from_slice(&smallest);
             return Fate::Cycle {
                 transient: first,
                 period: step - first,
             };
         }
-        if let Some((ustep, norm)) =
+        if let Some((ustep, shift)) =
             helix_shift(log, &v, &support, |_, shift, sup| sup == 1 && shift > 0)
         {
+            attractor.extend_from_slice(&shift);
             return Fate::Helix {
                 step: ustep,
                 period: step - ustep,
-                shift_norm: norm,
+                shift_norm: shift.iter().map(|x| x.abs()).max().unwrap_or(0),
             };
         }
         if log.len() == 64 {

@@ -1,0 +1,43 @@
+size 2: 873 canonical universes, starts in [-12, 12]^2, 0.2s
+
+most attractors:
+  universe 3280     moving   0  sinks   0  inert 625  boundary 0.000  conic 1.000  stripes 0.000
+  universe 656      moving   1  sinks  43  inert 536  boundary 0.190  conic 0.800  stripes 0.005
+  universe 1312     moving   1  sinks  25  inert 552  boundary 0.119  conic 0.900  stripes 0.019
+  universe 688      moving   0  sinks  46  inert 292  boundary 0.558  conic 0.450  stripes 0.000
+  universe 364      moving   0  sinks  35  inert 302  boundary 0.530  conic 0.500  stripes 0.000
+  universe 2551     moving   1  sinks   0  inert 325  boundary 0.021  conic 1.000  stripes 0.000
+  universe 3118     moving   1  sinks   0  inert 325  boundary 0.021  conic 1.000  stripes 0.000
+  universe 3253     moving   1  sinks   0  inert 325  boundary 0.021  conic 1.000  stripes 0.000
+
+most boundary:
+  universe 38       moving   0  sinks  25  inert   0  boundary 1.000  conic 0.083  stripes 0.274
+  universe 382      moving   0  sinks  36  inert   1  boundary 1.000  conic 0.050  stripes 0.021
+  universe 398      moving   0  sinks  24  inert   1  boundary 1.000  conic 0.217  stripes 0.484
+  universe 400      moving   0  sinks  47  inert   2  boundary 1.000  conic 0.050  stripes 0.000
+  universe 560      moving   2  sinks   0  inert   1  boundary 1.000  conic 0.500  stripes 0.955
+  universe 56       moving   1  sinks  24  inert 121  boundary 0.817  conic 0.325  stripes 0.490
+  universe 62       moving   1  sinks  23  inert 122  boundary 0.816  conic 0.383  stripes 0.502
+  universe 380      moving   1  sinks  34  inert 123  boundary 0.816  conic 0.292  stripes 0.237
+
+least conic (fate changes along rays from the origin):
+  universe 382      moving   0  sinks  36  inert   1  boundary 1.000  conic 0.050  stripes 0.021
+  universe 391      moving   0  sinks  36  inert   1  boundary 0.750  conic 0.050  stripes 0.000
+  universe 400      moving   0  sinks  47  inert   2  boundary 1.000  conic 0.050  stripes 0.000
+  universe 1120     moving   0  sinks  25  inert   0  boundary 0.500  conic 0.050  stripes 0.000
+  universe 38       moving   0  sinks  25  inert   0  boundary 1.000  conic 0.083  stripes 0.274
+  universe 301      moving   0  sinks  25  inert   0  boundary 0.785  conic 0.158  stripes 0.012
+  universe 281      moving   0  sinks  24  inert   1  boundary 0.767  conic 0.183  stripes 0.205
+  universe 220      moving   0  sinks  37  inert 133  boundary 0.799  conic 0.200  stripes 0.131
+
+most striped:
+  universe 560      moving   2  sinks   0  inert   1  boundary 1.000  conic 0.500  stripes 0.955
+  universe 62       moving   1  sinks  23  inert 122  boundary 0.816  conic 0.383  stripes 0.502
+  universe 56       moving   1  sinks  24  inert 121  boundary 0.817  conic 0.325  stripes 0.490
+  universe 398      moving   0  sinks  24  inert   1  boundary 1.000  conic 0.217  stripes 0.484
+  universe 506      moving   0  sinks  23  inert 135  boundary 0.798  conic 0.350  stripes 0.374
+  universe 38       moving   0  sinks  25  inert   0  boundary 1.000  conic 0.083  stripes 0.274
+  universe 218      moving   1  sinks  35  inert 255  boundary 0.615  conic 0.400  stripes 0.255
+  universe 224      moving   1  sinks  35  inert 255  boundary 0.615  conic 0.400  stripes 0.254
+
+fully conic: 484 of 873   single attractor: 13

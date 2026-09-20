@@ -467,10 +467,7 @@ pub fn basins<const N: usize>(
             let key = kinds.join("+");
             *b.kind_sets.entry(key.clone()).or_insert(0) += 1;
             let index = w.index();
-            let better = b
-                .representatives
-                .get(&key)
-                .is_none_or(|r| index < r.index);
+            let better = b.representatives.get(&key).is_none_or(|r| index < r.index);
             if better {
                 b.representatives.insert(
                     key,
@@ -505,4 +502,233 @@ pub fn basins<const N: usize>(
             }
         },
     )
+}
+
+// ---------------------------------------------------------------------------
+// Basin maps: which attractor each start state reaches.
+
+use crate::exact::analyze_ws;
+
+/// One cell of a basin map: fate kind code and attractor identity.
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Attractor {
+    pub kind: u8,
+    pub id: Vec<i64>,
+}
+
+/// Basin map of one universe over the box `[-radius, radius]^N` (row-major,
+/// last coordinate fastest), with the list of distinct attractors and
+/// pattern features.
+#[derive(Clone, Debug)]
+pub struct BasinMap {
+    pub index: u64,
+    pub radius: i64,
+    pub attractors: Vec<Attractor>,
+    /// Attractor index per cell (into `attractors`); origin gets the fixed attractor at 0.
+    pub cells: Vec<u16>,
+    pub features: BasinFeatures,
+}
+
+/// Pattern statistics of a basin map.
+#[derive(Clone, Debug, Default)]
+pub struct BasinFeatures {
+    /// Distinct attractors reached from the box.
+    pub attractors: usize,
+    /// Attractors that are not fixed points (cycles, rays, helices, spirals).
+    pub moving: usize,
+    /// Fixed points reached from at least one other cell (a real basin, not an inert cell).
+    pub sinks: usize,
+    /// Cells that are fixed and reached from nowhere else.
+    pub inert: usize,
+    /// Distinct fate kinds.
+    pub kinds: usize,
+    /// Fraction of axis-neighbouring cell pairs that reach different attractors.
+    pub boundary: f64,
+    /// Fraction of directions whose fate is the same at radius r and 2r (1 = conic basins).
+    pub conic: f64,
+    /// Fraction of cells that differ from a neighbour but agree with the cell two steps on
+    /// (alternating stripes: a lattice / residue effect).
+    pub stripes: f64,
+    /// Fraction of cells per kind code (fixed, cycle, ray, helix, spiral, undecided).
+    pub share: [f64; 6],
+}
+
+fn cell_coords<const N: usize>(mut k: usize, radius: i64) -> [i64; N] {
+    let side = (2 * radius + 1) as usize;
+    let mut v = [0i64; N];
+    for e in (0..N).rev() {
+        v[e] = (k % side) as i64 - radius;
+        k /= side;
+    }
+    v
+}
+
+fn cell_index<const N: usize>(v: &[i64; N], radius: i64) -> Option<usize> {
+    let side = (2 * radius + 1) as usize;
+    let mut k = 0usize;
+    for &x in v {
+        if x < -radius || x > radius {
+            return None;
+        }
+        k = k * side + (x + radius) as usize;
+    }
+    Some(k)
+}
+
+/// Compute the basin map of `w` over `[-radius, radius]^N`.
+pub fn basin_map<const N: usize>(w: &Reduced<N>, radius: i64, budget: Budget) -> BasinMap {
+    let side = (2 * radius + 1) as usize;
+    let total = side.pow(N as u32);
+    let mut ws = Workspace::<N>::new();
+    let mut attractors: Vec<Attractor> = Vec::new();
+    let mut lookup: BTreeMap<Attractor, u16> = BTreeMap::new();
+    let mut cells = vec![0u16; total];
+    for (k, cell) in cells.iter_mut().enumerate() {
+        let v = cell_coords::<N>(k, radius);
+        let fate = analyze_ws(w, v, 1, budget, &mut ws, &mut |_, _, _| {});
+        let (kind, _) = class_of(&fate);
+        let a = Attractor {
+            kind,
+            id: ws.attractor.clone(),
+        };
+        let id = match lookup.get(&a) {
+            Some(&i) => i,
+            None => {
+                let i = attractors.len() as u16;
+                attractors.push(a.clone());
+                lookup.insert(a, i);
+                i
+            }
+        };
+        *cell = id;
+    }
+    let features = basin_features::<N>(&attractors, &cells, radius);
+    BasinMap {
+        index: w.index(),
+        radius,
+        attractors,
+        cells,
+        features,
+    }
+}
+
+fn basin_features<const N: usize>(
+    attractors: &[Attractor],
+    cells: &[u16],
+    radius: i64,
+) -> BasinFeatures {
+    let mut f = BasinFeatures {
+        attractors: attractors.len(),
+        kinds: {
+            let mut ks: Vec<u8> = attractors.iter().map(|a| a.kind).collect();
+            ks.sort();
+            ks.dedup();
+            ks.len()
+        },
+        ..Default::default()
+    };
+    let total = cells.len() as f64;
+    let mut basin_size = vec![0usize; attractors.len()];
+    for &c in cells {
+        f.share[attractors[c as usize].kind as usize] += 1.0 / total;
+        basin_size[c as usize] += 1;
+    }
+    // Merge every fixed point that captures only itself into one "inert" class,
+    // so a zero-drift universe does not read as hundreds of attractors.
+    let inert_class = attractors.len() as u16;
+    let class: Vec<u16> = (0..attractors.len())
+        .map(|i| {
+            if attractors[i].kind == 0 && basin_size[i] == 1 {
+                inert_class
+            } else {
+                i as u16
+            }
+        })
+        .collect();
+    f.moving = attractors.iter().filter(|a| a.kind != 0).count();
+    f.sinks = (0..attractors.len())
+        .filter(|&i| attractors[i].kind == 0 && basin_size[i] > 1)
+        .count();
+    f.inert = (0..attractors.len())
+        .filter(|&i| attractors[i].kind == 0 && basin_size[i] == 1)
+        .count();
+    let cls = |k: usize| class[cells[k] as usize];
+    let (mut pairs, mut diff, mut stripes) = (0u64, 0u64, 0u64);
+    let (mut dirs, mut same) = (0u64, 0u64);
+    for k in 0..cells.len() {
+        let v = cell_coords::<N>(k, radius);
+        for e in 0..N {
+            let mut u = v;
+            u[e] += 1;
+            if let Some(j) = cell_index(&u, radius) {
+                pairs += 1;
+                if cls(j) != cls(k) {
+                    diff += 1;
+                    let mut u2 = v;
+                    u2[e] += 2;
+                    if let Some(j2) = cell_index(&u2, radius) {
+                        if cls(j2) == cls(k) {
+                            stripes += 1;
+                        }
+                    }
+                }
+            }
+        }
+        // Conic test: compare with the doubled point for cells in the middle ring.
+        let norm = v.iter().map(|x| x.abs()).max().unwrap_or(0);
+        if norm > 0 && norm * 2 <= radius && norm * 2 > radius / 2 {
+            let doubled: [i64; N] = std::array::from_fn(|e| 2 * v[e]);
+            if let Some(j) = cell_index(&doubled, radius) {
+                dirs += 1;
+                if cls(j) == cls(k) {
+                    same += 1;
+                }
+            }
+        }
+    }
+    f.boundary = diff as f64 / pairs.max(1) as f64;
+    f.stripes = stripes as f64 / pairs.max(1) as f64;
+    f.conic = same as f64 / dirs.max(1) as f64;
+    f
+}
+
+/// Basin maps of every canonical universe (one per symmetry orbit), with features.
+/// `samples = None` scans every canonical universe; `Some((n, seed))` draws `n` random
+/// universes and maps their canonical representatives (duplicates removed).
+pub fn basin_scan<const N: usize>(
+    radius: i64,
+    budget: Budget,
+    threads: usize,
+    samples: Option<(u64, u64)>,
+) -> Vec<BasinMap> {
+    let count = samples
+        .map(|(n, _)| n)
+        .unwrap_or(Reduced::<N>::count() as u64);
+    let mut maps: Vec<BasinMap> = par_chunks(
+        count,
+        threads,
+        Vec::new,
+        |first, len, acc: &mut Vec<BasinMap>| match samples {
+            None => {
+                let mut w = Reduced::<N>::from_index(first);
+                for _ in first..first + len {
+                    if w.canonical() == w {
+                        acc.push(basin_map(&w, radius, budget));
+                    }
+                    w.increment();
+                }
+            }
+            Some((_, seed)) => {
+                let mut rng = SplitMix64::new(seed ^ first.wrapping_mul(0x9E37_79B9_7F4A_7C15));
+                for _ in 0..len {
+                    let w = random_reduced::<N>(&mut rng).canonical();
+                    acc.push(basin_map(&w, radius, budget));
+                }
+            }
+        },
+        |a, b| a.extend(b),
+    );
+    maps.sort_by_key(|m| m.index);
+    maps.dedup_by_key(|m| m.index);
+    maps
 }

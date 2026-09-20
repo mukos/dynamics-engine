@@ -12,6 +12,8 @@ cargo run --release -- exact --size 3    # exact fates of all 3^18 reduced unive
 cargo run --release -- basins --size 2   # exact fates over all start states per universe
 cargo run --release -- orbits --size 4   # symmetry orbit counts
 cargo run --release -- show --size 3 --index 27411247   # one universe's event trajectory
+cargo run --release -- basinmap --size 2 --index 560 --radius 8   # which attractor each start reaches
+cargo run --release -- basinscan --size 2 --radius 12 --json      # basin maps of all canonical universes
 cargo test
 ```
 
@@ -80,6 +82,9 @@ Exhaustive runs can be sharded across machines with `--offset i --stride k`
   `2^N N!`); the 10-step heuristic misclassifies ~0.2 % of matrices at N=3.
 * The fate depends on the start state for ~75 % of universes; only ~13 % (N=2)
   and ~2.4 % (N=3) are bounded from every start.
+* Basins come in three families: conic sectors (55 % at N=2), stripe families
+  from conserved linear functionals (40 %), and parity checkerboards (1 %).
+  Browse them in `docs/basin-atlas.html` (serve `docs/` locally).
 * Full analysis, tables, literature and open questions: [docs/theory.md](docs/theory.md).
 
 ## Known quirks (kept for compatibility)

@@ -262,7 +262,49 @@ Done, in order of payoff:
    static musl build cannot `dlopen` the driver, so it needs `build-essential`
    and `nvidia-cuda-toolkit` first.
 
-## 9. Open questions worth attacking next
+## 9. Basin patterns
+
+`basinmap` colours every start state in a box by the attractor it reaches
+(the fixed state, the smallest state of the cycle, the ray's drift, the helix
+shift); `basinscan` does it for every canonical universe and scores the map.
+Size 2 was scanned completely (873 canonical universes, box `[−12, 12]²`,
+0.2 s); size 3 by sampling (2 990 canonical universes, box `[−4, 4]³`).
+`docs/basin-atlas.html` shows the maps. Three families account for almost
+everything:
+
+1. **Conic sectors** — 55 % of size-2 universes. The fate depends only on
+   the direction of the start: basins are unions of angular sectors bounded
+   by lines through the origin. This is the continuous PCD picture, where the
+   flow is scale-invariant; it survives discretisation whenever no coordinate
+   lands exactly on zero in a way that matters.
+2. **Stripe families (conservation laws)** — 40 % of size-2 universes have
+   ten or more fixed points with real basins, arranged along a line, with
+   parallel basins. Cause: a linear functional `L(v) = a·v` with `a·d(s) = 0`
+   for every sign pattern the trajectory visits is conserved, so all starts on
+   one level line `L = k` fall to the same attractor (universe 398: fixed points
+   `(0, k)`, basins are the diagonals `v₀ + v₁ = k`). At size 3 the same
+   mechanism indexes *cycles*: universe 1352401 has a family of cycles through
+   `(0, 0, −k)`, one per level of the invariant, separated by rays.
+3. **Checkerboards (parity)** — 8 of 873 size-2 universes. A coordinate with
+   drift of magnitude 2 either lands exactly on zero (goes silent) or jumps
+   over it (flips sign) depending on its parity, so `v₀ + v₁ mod 2` decides
+   the fate. Universe 560 is a pure checkerboard: two cycles, each owning one
+   colour of the board. Mixed forms (stripes with a checkerboard band near an
+   axis, universes 38 and 398) come from the same overshoot effect.
+
+Other structure visible in the atlas: whole orthants of **inert cells** (an
+orthant whose drift is zero makes every state in it a fixed point; universe
+89), and universes with up to 8 distinct ray directions (universe 5520), all
+conic.
+
+Consequences for "classify the universe from its matrix": a universe is a
+*phase portrait*, and the portrait is determined by (a) the sector structure
+of the drifts, (b) the conserved linear functionals of the drift rows, and
+(c) the residues of the drift magnitudes. All three are properties of the
+`pos`/`neg` rows alone, so they are the right invariants to compute
+symbolically next.
+
+## 10. Open questions worth attacking next
 
 * Turn the spiral observation into a certificate: extract the affine return
   map of the observed loop, verify it symbolically (residue classes of the
@@ -271,7 +313,8 @@ Done, in order of payoff:
   unbiased at the orbit level.
 * Classify the *phase portrait* rather than one start: which reduced universes
   are globally bounded (all starts fixed/cycle)? At N=2 it is 13 %, at N=3
-  about 2.4 %. A structural characterisation (in terms of `pos`/`neg`) of that
-  set would be a real theorem about this system.
+  about 2.4 %. §9 suggests the ingredients: sector structure, conserved
+  linear functionals (`a·d(s) = 0`), and drift residues. Derive the basin map
+  from those symbolically and check it against `basinmap`.
 * Relate the cycle-period histogram (heavy tail to 1510 at N=3) to loop return
   maps with `A` of finite order.

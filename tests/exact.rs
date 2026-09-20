@@ -238,3 +238,46 @@ fn increment_walks_index_order() {
     assert!(!w.increment());
     assert_eq!(w, Reduced::<2>::from_index(0));
 }
+
+#[test]
+fn workspace_reports_attractors() {
+    use system::exact::{analyze_ws, Workspace};
+    let b = Budget::default();
+    let mut ws = Workspace::<2>::new();
+    // Self-damping pair from (5,3): stops at the origin.
+    let damp = w([[-1, 0], [0, -1]], [[0, 0], [0, 0]]);
+    assert!(matches!(
+        analyze_ws(&damp, [5, 3], 1, b, &mut ws, &mut |_, _, _| {}),
+        Fate::Fixed { .. }
+    ));
+    assert_eq!(ws.attractor, vec![0, 0]);
+    // Ray: attractor is the drift.
+    let ray = w([[1, 1], [0, 0]], [[0, 0], [0, 0]]);
+    assert!(matches!(
+        analyze_ws(&ray, [1, 2], 1, b, &mut ws, &mut |_, _, _| {}),
+        Fate::Ray { .. }
+    ));
+    assert_eq!(ws.attractor, vec![1, 1]);
+    // Two starts on the same cycle share the attractor id.
+    let cyc = Reduced::<2>::from_index(613);
+    analyze_ws(&cyc, cyc.initial_state(), 1, b, &mut ws, &mut |_, _, _| {});
+    let a = ws.attractor.clone();
+    analyze_ws(&cyc, [1, 0], 1, b, &mut ws, &mut |_, _, _| {});
+    assert_eq!(a, ws.attractor);
+}
+
+#[test]
+fn basin_map_features() {
+    use system::experiments::basin_map;
+    let b = Budget::default();
+    // Universe 560: parity checkerboard between two cycles.
+    let m = basin_map(&Reduced::<2>::from_index(560), 6, b);
+    assert_eq!(m.features.moving, 2);
+    assert!(m.features.stripes > 0.8, "{:?}", m.features);
+    assert!(m.features.boundary > 0.95);
+    // Zero drift everywhere: every cell is an inert fixed point.
+    let m = basin_map(&Reduced::<2>::from_index(3280), 3, b);
+    assert_eq!(m.features.inert, 49);
+    assert_eq!(m.features.boundary, 0.0);
+    assert_eq!(m.features.conic, 1.0);
+}

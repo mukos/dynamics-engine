@@ -6,7 +6,8 @@ use system::exact::{
     analyze_clamped_traced, analyze_traced, matrix_orbits, reduced_orbits, Budget, Clamped, Reduced,
 };
 use system::experiments::{
-    basins, census_clamped, census_exhaustive, census_sampled, class_name, Basins, Census,
+    basin_map, basin_scan, basins, census_clamped, census_exhaustive, census_sampled, class_name,
+    BasinMap, Basins, Census,
 };
 use system::matrix::{enumerable, matrix_count, MAX_CHANNELS};
 use system::multiverse::{exhaustive, sample, sorted, Execution, Exhaustive, Results, Sampled};
@@ -18,6 +19,8 @@ const USAGE: &str =
        system basins [options]     exact fates over all initial states in a box, per universe
        system orbits [options]     symmetry orbit counts (Burnside)
        system show [options]       print one universe's drift rows and event trajectory
+       system basinmap [options]   attractor reached from every start in a box, for one universe
+       system basinscan [options]  basin maps + pattern features of every canonical universe
 
 run options:
 
@@ -35,11 +38,11 @@ run options:
 
 exact / basins options:
   --size <n>        elements (default 2)
-  --samples <n>     random reduced universes instead of all (exact only)
+  --samples <n>     random reduced universes instead of all (exact, basins, basinscan)
   --seed <n>        PRNG seed for --samples
   --max-events <n>  orthant changes before giving up (default 10000)
   --spiral <n>      growing returns needed to call a spiral, 0 disables (default 8)
-  --radius <r>      basins: start box [-r, r]^n (default 2)
+  --radius <r>      basins / basinmap / basinscan: start box [-r, r]^n (default 2)
   --model <m>       sign (original, default) or clamped (create/destroy with positivity)
   --index <i>       show: reduced-universe index (base-3 encoding, see exact.rs)
   --start <v,v,..>  show: initial state instead of the all-fire start
@@ -143,7 +146,17 @@ fn parse_args() -> Result<Args, String> {
     if !["sign", "clamped"].contains(&args.model.as_str()) {
         return Err("--model must be sign or clamped".into());
     }
-    if !["run", "exact", "basins", "orbits", "show"].contains(&args.command.as_str()) {
+    if ![
+        "run",
+        "exact",
+        "basins",
+        "orbits",
+        "show",
+        "basinmap",
+        "basinscan",
+    ]
+    .contains(&args.command.as_str())
+    {
         return Err(format!("unknown command {}", args.command));
     }
     Ok(args)
@@ -218,6 +231,8 @@ fn main() {
         "basins" => return cmd_basins(&args, exec.threads),
         "orbits" => return cmd_orbits(&args),
         "show" => return cmd_show(&args),
+        "basinmap" => return cmd_basinmap(&args),
+        "basinscan" => return cmd_basinscan(&args, exec.threads),
         _ => {}
     }
 
@@ -685,6 +700,199 @@ fn cmd_show(args: &Args) {
             eprintln!("show supports sizes 1-4");
             exit(2)
         }
+    }
+    let _ = std::io::stdout().write_all(out.as_bytes());
+}
+
+fn attractor_text(a: &system::experiments::Attractor) -> String {
+    let v =
+        a.id.iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+    match a.kind {
+        0 => format!("fixed at ({v})"),
+        1 => format!("cycle through ({v})"),
+        2 => format!("ray with drift ({v})"),
+        3 => format!("helix with shift ({v})"),
+        4 => "spiral".into(),
+        _ => "undecided".into(),
+    }
+}
+
+fn basin_json(m: &BasinMap, size: usize) -> String {
+    let attractors = m
+        .attractors
+        .iter()
+        .map(|a| {
+            format!(
+                "{{\"kind\": \"{}\", \"id\": [{}]}}",
+                class_name(a.kind),
+                a.id.iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    let cells = m
+        .cells
+        .iter()
+        .map(|c| c.to_string())
+        .collect::<Vec<_>>()
+        .join(",");
+    let f = &m.features;
+    format!(
+        "{{\"index\": {}, \"size\": {size}, \"radius\": {}, \"features\": {{\"attractors\": {}, \"moving\": {}, \"sinks\": {}, \"inert\": {}, \"kinds\": {}, \"boundary\": {:.4}, \"conic\": {:.4}, \"stripes\": {:.4}, \"share\": [{}]}}, \"attractors\": [{attractors}], \"cells\": [{cells}]}}",
+        m.index,
+        m.radius,
+        f.attractors,
+        f.moving,
+        f.sinks,
+        f.inert,
+        f.kinds,
+        f.boundary,
+        f.conic,
+        f.stripes,
+        f.share.iter().map(|x| format!("{x:.4}")).collect::<Vec<_>>().join(",")
+    )
+}
+
+fn feature_line(m: &BasinMap) -> String {
+    format!(
+        "  universe {:<8} moving {:>3}  sinks {:>3}  inert {:>3}  boundary {:.3}  conic {:.3}  stripes {:.3}\n",
+        m.index, m.features.moving, m.features.sinks, m.features.inert, m.features.boundary, m.features.conic, m.features.stripes
+    )
+}
+
+fn cmd_basinmap(args: &Args) {
+    let b = budget(args);
+    let m: BasinMap = with_channels!(args.size, C => basin_map(&Reduced::<{ C / 2 }>::from_index(args.index), args.radius, b));
+    let mut out = String::new();
+    if args.json {
+        out.push_str(&basin_json(&m, args.size));
+        out.push('\n');
+    } else {
+        let f = &m.features;
+        out.push_str(&format!(
+            "universe {} (size {}), starts in [-{}, {}]^{}: {} attractors, {} kinds, boundary {:.3}, conic {:.3}, stripes {:.3}\n",
+            m.index, args.size, m.radius, m.radius, args.size, f.attractors, f.kinds, f.boundary, f.conic, f.stripes
+        ));
+        let glyphs: Vec<char> = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            .chars()
+            .collect();
+        for (i, a) in m.attractors.iter().enumerate() {
+            let share = m.cells.iter().filter(|&&c| c as usize == i).count();
+            out.push_str(&format!(
+                "  {} {:<34} {:>6} cells\n",
+                glyphs.get(i).copied().unwrap_or('#'),
+                attractor_text(a),
+                share
+            ));
+        }
+        if args.size == 2 {
+            let side = (2 * m.radius + 1) as usize;
+            out.push_str("\nmap (v0 across, v1 down from +radius to -radius):\n");
+            for row in (0..side).rev() {
+                let line: String = (0..side)
+                    .map(|col| {
+                        glyphs
+                            .get(m.cells[col * side + row] as usize)
+                            .copied()
+                            .unwrap_or('#')
+                    })
+                    .collect();
+                out.push_str(&format!("  {line}\n"));
+            }
+        }
+    }
+    let _ = std::io::stdout().write_all(out.as_bytes());
+}
+
+fn cmd_basinscan(args: &Args, threads: usize) {
+    let b = budget(args);
+    let started = Instant::now();
+    let maps: Vec<BasinMap> = with_channels!(args.size, C => basin_scan::<{ C / 2 }>(args.radius, b, threads, args.samples.map(|n| (n, args.seed))));
+    let elapsed = started.elapsed().as_secs_f64();
+    let mut out = String::new();
+    if args.json {
+        out.push_str(&format!(
+            "{{\n  \"size\": {},\n  \"radius\": {},\n  \"universes\": {},\n  \"maps\": [\n",
+            args.size,
+            args.radius,
+            maps.len()
+        ));
+        for (i, m) in maps.iter().enumerate() {
+            out.push_str("    ");
+            out.push_str(&basin_json(m, args.size));
+            out.push_str(if i + 1 < maps.len() { ",\n" } else { "\n" });
+        }
+        out.push_str("  ]\n}\n");
+    } else {
+        out.push_str(&format!(
+            "size {}: {} canonical universes, starts in [-{}, {}]^{}, {elapsed:.1}s\n",
+            args.size,
+            maps.len(),
+            args.radius,
+            args.radius,
+            args.size
+        ));
+        let mut v: Vec<&BasinMap> = maps.iter().collect();
+        v.sort_by(|a, b| {
+            b.features
+                .attractors
+                .cmp(&a.features.attractors)
+                .then(a.index.cmp(&b.index))
+        });
+        out.push_str("\nmost attractors:\n");
+        v.iter()
+            .take(8)
+            .for_each(|m| out.push_str(&feature_line(m)));
+        v.sort_by(|a, b| {
+            b.features
+                .boundary
+                .partial_cmp(&a.features.boundary)
+                .unwrap()
+                .then(a.index.cmp(&b.index))
+        });
+        out.push_str("\nmost boundary:\n");
+        v.iter()
+            .take(8)
+            .for_each(|m| out.push_str(&feature_line(m)));
+        let mut multi: Vec<&BasinMap> = maps
+            .iter()
+            .filter(|m| m.features.moving + m.features.sinks > 1)
+            .collect();
+        multi.sort_by(|a, b| {
+            a.features
+                .conic
+                .partial_cmp(&b.features.conic)
+                .unwrap()
+                .then(a.index.cmp(&b.index))
+        });
+        out.push_str("\nleast conic (fate changes along rays from the origin):\n");
+        multi
+            .iter()
+            .take(8)
+            .for_each(|m| out.push_str(&feature_line(m)));
+        v.sort_by(|a, b| {
+            b.features
+                .stripes
+                .partial_cmp(&a.features.stripes)
+                .unwrap()
+                .then(a.index.cmp(&b.index))
+        });
+        out.push_str("\nmost striped:\n");
+        v.iter()
+            .take(8)
+            .for_each(|m| out.push_str(&feature_line(m)));
+        let conic_all = maps.iter().filter(|m| m.features.conic >= 0.999).count();
+        let single = maps.iter().filter(|m| m.features.attractors == 1).count();
+        out.push_str(&format!(
+            "\nfully conic: {conic_all} of {}   single attractor: {single}\n",
+            maps.len()
+        ));
     }
     let _ = std::io::stdout().write_all(out.as_bytes());
 }
