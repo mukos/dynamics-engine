@@ -2,53 +2,62 @@ use std::io::Write;
 use std::process::exit;
 use std::time::{Duration, Instant};
 
-use system::exact::{
-    analyze_clamped_traced, analyze_traced, matrix_orbits, reduced_orbits, Budget, Clamped, Reduced,
+use dynamics_engine::exact::{
+    analyze_clamped_traced, analyze_traced, matrix_orbits, reduced_orbits, Budget, Clamped, Fate,
+    Reduced,
 };
-use system::experiments::{
+use dynamics_engine::experiments::{
     basin_map, basin_scan, basins, census_clamped, census_exhaustive, census_sampled, class_name,
     BasinMap, Basins, Census,
 };
-use system::matrix::{enumerable, matrix_count, MAX_CHANNELS};
-use system::multiverse::{exhaustive, sample, sorted, Execution, Exhaustive, Results, Sampled};
-use system::universe::{Rules, DEFAULT_MAX_STEPS, MAX_STEPS_CAP};
+use dynamics_engine::matrix::{enumerable, matrix_count, MAX_CHANNELS};
+use dynamics_engine::multiverse::{exhaustive, sample, sorted, Execution, Exhaustive, Results, Sampled};
+use dynamics_engine::universe::{Rules, DEFAULT_MAX_STEPS, MAX_STEPS_CAP};
 
-const USAGE: &str =
-    "Usage: system [run] [options]      10-step heuristic histogram (original model)
-       system exact [options]      exact fates of every reduced universe (3^(2n^2) of them)
-       system basins [options]     exact fates over all initial states in a box, per universe
-       system orbits [options]     symmetry orbit counts (Burnside)
-       system show [options]       print one universe's drift rows and event trajectory
-       system basinmap [options]   attractor reached from every start in a box, for one universe
-       system basinscan [options]  basin maps + pattern features of every canonical universe
+const USAGE: &str = "Dynamics Engine: exact fates of the discrete dynamical systems
+v(t+1) = v(t) + d(sign v(t)).  https://mukos.github.io/dynamics-engine/
 
-run options:
+Usage: dynamics-engine <command> [options]
 
-  --size <n>      elements per universe (default 2; channels = 2n, matrices = 2^(4n^2); max 8)
-  --steps <n>     steps before classification (default 10, max 32)
-  --samples <n>   simulate n random matrices instead of every matrix
-  --seed <n>      PRNG seed for --samples (default 1)
-  --offset <n>    exhaustive: first matrix index (shard start)
-  --stride <n>    exhaustive: index stride (shard count)
-  --threads <n>   worker threads (default: all cores)
-  --fixed-cycle   also compare the final step with the previous one (see README)
-  --quiet         no progress output
-  --json          print results as JSON
-  -h, --help      this text
+Commands:
+  show <id>    one universe: its drift rows, every sign change and its fate
+  exact        fate census of every universe of one size (--samples for N >= 4)
+  basins       fates over every start state in a box, per universe
+  basinmap     the attractor each start in a box reaches, for one universe (--index)
+  basinscan    basin maps and pattern features of every canonical universe
+  orbits       symmetry orbit counts (Burnside)
+  run          the original 10-step signature histogram (legacy model)
 
-exact / basins options:
-  --size <n>        elements (default 2)
-  --samples <n>     random reduced universes instead of all (exact, basins, basinscan)
-  --seed <n>        PRNG seed for --samples
-  --max-events <n>  orthant changes before giving up (default 10000)
+Examples:
+  dynamics-engine show 3-27411247        a spiral whose loop doubles each lap
+  dynamics-engine show 2-613             the period-10 cycle from the website
+  dynamics-engine exact --size 3         all 387,420,489 three-element universes
+  dynamics-engine exact --size 4 --samples 100000000 --seed 7
+
+A universe id is N-index, the same as the website's #u= links. --size N --index I also works.
+
+Options:
+  --size <n>        elements per universe (default 2)
+  --index <i>       show / basinmap: universe index (base-3 drift rows, see exact.rs)
+  --start <v,v,..>  show: initial state instead of the all-fire start
+  --samples <n>     random universes instead of all (exact, basins, basinscan, run)
+  --seed <n>        PRNG seed for --samples (default 1)
+  --max-events <n>  sign changes before giving up (default 10000)
   --spiral <n>      growing returns needed to call a spiral, 0 disables (default 8)
   --radius <r>      basins / basinmap / basinscan: start box [-r, r]^n (default 2)
-  --model <m>       sign (original, default) or clamped (create/destroy with positivity)
-  --index <i>       show: reduced-universe index (base-3 encoding, see exact.rs)
-  --start <v,v,..>  show: initial state instead of the all-fire start
-  --json            basins / exact: machine-readable output with representative universes
-  --no-heuristic    exact: skip the comparison with the 10-step heuristic
-  --threads <n>";
+  --model <m>       sign (default) or clamped (create/destroy with positivity)
+  --json            machine-readable output (exact, basins, run)
+  --heuristic       exact: also compare with the 10-step heuristic (much slower)
+  --threads <n>     worker threads (default: all cores)
+  --quiet           no progress output
+  -V, --version     print the version
+  -h, --help        this text
+
+run (legacy) options:
+  --steps <n>       steps before classification (default 10, max 32)
+  --offset <n>      exhaustive: first matrix index (shard start)
+  --stride <n>      exhaustive: index stride (shard count)
+  --fixed-cycle     also compare the final step with the previous one (see README)";
 
 struct Args {
     command: String,
@@ -77,7 +86,7 @@ fn parse_args() -> Result<Args, String> {
         max_events: 10_000,
         spiral: 8,
         radius: 2,
-        heuristic: true,
+        heuristic: false,
         model: "sign".into(),
         index: 0,
         start: None,
@@ -90,6 +99,10 @@ fn parse_args() -> Result<Args, String> {
         quiet: false,
         json: false,
     };
+    if std::env::args().len() == 1 {
+        println!("{USAGE}");
+        exit(0);
+    }
     let mut it = std::env::args().skip(1).peekable();
     if let Some(first) = it.peek() {
         if !first.starts_with('-') {
@@ -105,6 +118,10 @@ fn parse_args() -> Result<Args, String> {
                 println!("{USAGE}");
                 exit(0);
             }
+            "-V" | "--version" => {
+                println!("dynamics-engine {}", env!("CARGO_PKG_VERSION"));
+                exit(0);
+            }
             "--size" => args.size = num(&value("--size")?)?,
             "--steps" => args.rules.max_steps = num(&value("--steps")?)?,
             "--samples" => args.samples = Some(num(&value("--samples")?)?),
@@ -116,7 +133,8 @@ fn parse_args() -> Result<Args, String> {
             "--max-events" => args.max_events = num(&value("--max-events")?)?,
             "--spiral" => args.spiral = num(&value("--spiral")?)?,
             "--radius" => args.radius = num(&value("--radius")?)?,
-            "--no-heuristic" => args.heuristic = false,
+            "--heuristic" => args.heuristic = true,
+            "--no-heuristic" => args.heuristic = false, // the default; kept for old scripts
             "--model" => args.model = value("--model")?,
             "--index" => args.index = num(&value("--index")?)?,
             "--start" => {
@@ -129,6 +147,16 @@ fn parse_args() -> Result<Args, String> {
             }
             "--quiet" => args.quiet = true,
             "--json" => args.json = true,
+            id if args.command == "show" && !id.starts_with('-') => {
+                // "3-27411247" (size-index, as in the website's #u= links) or a bare index.
+                match id.split_once('-') {
+                    Some((n, i)) => {
+                        args.size = num(n)?;
+                        args.index = num(i)?;
+                    }
+                    None => args.index = num(id)?,
+                }
+            }
             other => return Err(format!("unknown argument {other}")),
         }
     }
@@ -145,6 +173,15 @@ fn parse_args() -> Result<Args, String> {
     }
     if !["sign", "clamped"].contains(&args.model.as_str()) {
         return Err("--model must be sign or clamped".into());
+    }
+    if args.model == "sign" && args.size <= 4 && ["show", "basinmap"].contains(&args.command.as_str()) {
+        let count = 3u64.pow(2 * (args.size * args.size) as u32);
+        if args.index >= count {
+            return Err(format!(
+                "N = {} has {count} universes, so the index must be below {count}",
+                args.size
+            ));
+        }
     }
     if ![
         "run",
@@ -211,7 +248,7 @@ fn main() {
     let args = match parse_args() {
         Ok(a) => a,
         Err(e) => {
-            eprintln!("error: {e}\n\n{USAGE}");
+            eprintln!("error: {e}\nRun dynamics-engine --help for usage.");
             exit(2);
         }
     };
@@ -640,7 +677,7 @@ fn cmd_show(args: &Args) {
         v.iter()
             .map(|x| format!("{x:>4}"))
             .collect::<Vec<_>>()
-            .join("")
+            .join(" ")
     };
     macro_rules! show {
         ($n:literal) => {{
@@ -688,7 +725,13 @@ fn cmd_show(args: &Args) {
             };
             out.push_str("events:\n");
             out.push_str(&events);
-            out.push_str(&format!("fate: {fate:?}\n"));
+            out.push_str(&format!("fate: {}\n", fate_text(&fate)));
+            if args.model == "sign" && args.start.is_none() && (2..=4).contains(&args.size) {
+                out.push_str(&format!(
+                    "watch it: https://mukos.github.io/dynamics-engine/#u={}-{}\n",
+                    args.size, args.index
+                ));
+            }
         }};
     }
     match args.size {
@@ -704,7 +747,26 @@ fn cmd_show(args: &Args) {
     let _ = std::io::stdout().write_all(out.as_bytes());
 }
 
-fn attractor_text(a: &system::experiments::Attractor) -> String {
+fn fate_text(fate: &Fate) -> String {
+    match *fate {
+        Fate::Fixed { step } => format!("fixed, the velocity reaches zero at step {step}"),
+        Fate::Cycle { transient, period } => {
+            format!("cycle of period {period}, repeating from step {transient}")
+        }
+        Fate::Ray { step } => format!("ray, escaping in a straight line from step {step}"),
+        Fate::Helix { step, period, shift_norm } => format!(
+            "helix, from step {step} a {period}-step segment repeats shifted by a vector of size {shift_norm}"
+        ),
+        Fate::Spiral { returns, max_norm } => format!(
+            "spiral (empirical), {returns} growing returns in a row, |v| up to {max_norm}"
+        ),
+        Fate::Undecided { events, max_norm } => {
+            format!("undecided, no certificate after {events} sign changes, |v| up to {max_norm}")
+        }
+    }
+}
+
+fn attractor_text(a: &dynamics_engine::experiments::Attractor) -> String {
     let v =
         a.id.iter()
             .map(|x| x.to_string())

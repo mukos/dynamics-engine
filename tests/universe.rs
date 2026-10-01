@@ -1,6 +1,6 @@
-use system::matrix::{decode, matrix_count, random, to_vec};
-use system::rng::SplitMix64;
-use system::universe::{Rules, Symbol, Universe};
+use dynamics_engine::matrix::{decode, matrix_count, random, to_vec};
+use dynamics_engine::rng::SplitMix64;
+use dynamics_engine::universe::{Rules, Symbol, Universe};
 
 fn rows<const C: usize>(m: [[u8; C]; C]) -> [u16; C] {
     let mut out = [0u16; C];

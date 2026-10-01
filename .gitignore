@@ -4,3 +4,4 @@ node_modules/
 *.log
 results/*.shard*.json
 .claude/launch.json
+.cargo/config.toml

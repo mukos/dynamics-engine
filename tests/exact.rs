@@ -1,7 +1,7 @@
-use system::exact::{
+use dynamics_engine::exact::{
     analyze, analyze_universe, matrix_orbits, reduced_orbits, Budget, Fate, Reduced,
 };
-use system::matrix::decode;
+use dynamics_engine::matrix::decode;
 
 fn w<const N: usize>(pos: [[i8; N]; N], neg: [[i8; N]; N]) -> Reduced<N> {
     Reduced { pos, neg }
@@ -48,9 +48,9 @@ fn every_bit_matrix_reduces_consistently() {
     for index in 0..1u64 << 16 {
         let rows = decode::<4>(index);
         let r = Reduced::<2>::from_rows(&rows);
-        let mut u = system::universe::Universe::<4>::new(
+        let mut u = dynamics_engine::universe::Universe::<4>::new(
             rows,
-            system::universe::Universe::<4>::ALL,
+            dynamics_engine::universe::Universe::<4>::ALL,
             Default::default(),
         );
         u.run();
@@ -125,9 +125,9 @@ fn exact_and_heuristic_agree_on_clear_cases() {
     // Every size-2 matrix whose 10-step signature shows growth must not be a proven fixed point.
     for index in 0..1u64 << 16 {
         let rows = decode::<4>(index);
-        let mut u = system::universe::Universe::<4>::new(
+        let mut u = dynamics_engine::universe::Universe::<4>::new(
             rows,
-            system::universe::Universe::<4>::ALL,
+            dynamics_engine::universe::Universe::<4>::ALL,
             Default::default(),
         );
         u.run();
@@ -147,7 +147,7 @@ fn symmetry_preserves_fate() {
     for index in (0..Reduced::<2>::count() as u64).step_by(7) {
         let r = Reduced::<2>::from_index(index);
         let f = analyze_universe(&r, b).kind();
-        system::exact::for_each_signed_permutation::<2>(|perm, flip| {
+        dynamics_engine::exact::for_each_signed_permutation::<2>(|perm, flip| {
             assert_eq!(analyze_universe(&r.transform(perm, flip), b).kind(), f);
         });
         assert_eq!(r.canonical(), r.canonical().canonical());
@@ -166,7 +166,7 @@ fn orbit_counts() {
 
 #[test]
 fn clamped_fates() {
-    use system::exact::{analyze_clamped, Clamped};
+    use dynamics_engine::exact::{analyze_clamped, Clamped};
     let b = Budget::default();
     // Self-creating element grows forever.
     assert_eq!(
@@ -193,7 +193,7 @@ fn clamped_fates() {
 
 #[test]
 fn helix_is_certified() {
-    use system::exact::{analyze_clamped, Clamped};
+    use dynamics_engine::exact::{analyze_clamped, Clamped};
     let b = Budget::default();
     // Size-3 reduced universe 560: sign pattern alternates [0,-,0] / [+,-,+] while v_1 falls by 4 every 2 steps.
     let w = Reduced::<3>::from_index(560);
@@ -241,7 +241,7 @@ fn increment_walks_index_order() {
 
 #[test]
 fn workspace_reports_attractors() {
-    use system::exact::{analyze_ws, Workspace};
+    use dynamics_engine::exact::{analyze_ws, Workspace};
     let b = Budget::default();
     let mut ws = Workspace::<2>::new();
     // Self-damping pair from (5,3): stops at the origin.
@@ -268,7 +268,7 @@ fn workspace_reports_attractors() {
 
 #[test]
 fn basin_map_features() {
-    use system::experiments::basin_map;
+    use dynamics_engine::experiments::basin_map;
     let b = Budget::default();
     // Universe 560: parity checkerboard between two cycles.
     let m = basin_map(&Reduced::<2>::from_index(560), 6, b);

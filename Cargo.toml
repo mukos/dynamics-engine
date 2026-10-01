@@ -1,8 +1,11 @@
 [package]
-name = "system"
+name = "dynamics-engine"
 version = "2.0.0"
 edition = "2021"
-description = "Exhaustive and sampled simulation of small activation-matrix systems"
+description = "Exact classifier for the discrete dynamical systems v(t+1) = v(t) + d(sign v(t))"
+repository = "https://github.com/mukos/dynamics-engine"
+homepage = "https://mukos.github.io/dynamics-engine/"
+readme = "README.md"
 license = "MIT"
 
 [dependencies]

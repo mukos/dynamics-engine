@@ -56,36 +56,48 @@ Full tables, proofs and open questions are in [docs/theory.md](docs/theory.md).
 
 ## Quick start
 
-You need a stable Rust toolchain ([rustup.rs](https://rustup.rs)). There are no crate
-dependencies.
+The engine is a command-line tool. You need a stable Rust toolchain
+([rustup.rs](https://rustup.rs)); there are no crate dependencies.
+
+```bash
+cargo install --git https://github.com/mukos/dynamics-engine
+```
+
+That puts `dynamics-engine` on your `PATH`. Look at one universe:
+
+```bash
+dynamics-engine show 2-613
+```
+
+```
+reduced universe 613 (multiplicity 8, canonical: true):
+  element 0: pos = [  -1   -1 ]  neg = [   0    1 ]
+  element 1: pos = [   1    0 ]  neg = [  -1    0 ]
+events:
+  step      1  v = [  -1    0 ]  drift = [   0    1 ]
+  step      2  v = [  -1    1 ]  drift = [   1    1 ]
+  ...
+  step     16  v = [   1    0 ]  drift = [  -1   -1 ]
+fate: cycle of period 10, repeating from step 6
+watch it: https://mukos.github.io/dynamics-engine/#u=2-613
+```
+
+A universe id is `N-index`, the same id the website uses in its `#u=` links, so any universe
+from the site can be replayed in the terminal and the other way round. Then classify every
+three-element universe:
+
+```bash
+dynamics-engine exact --size 3
+```
+
+To work on the code instead:
 
 ```bash
 git clone https://github.com/mukos/dynamics-engine.git
 cd dynamics-engine
-cargo build --release
-```
-
-Classify every three-element universe:
-
-```bash
-cargo run --release -- exact --size 3
-```
-
-Replay one universe event by event (this one is a spiral whose loop doubles each lap):
-
-```bash
-cargo run --release -- show --size 3 --index 27411247
-```
-
-Run the tests:
-
-```bash
+cargo run --release -- show 3-27411247
 cargo test --release
 ```
-
-> **Toolchain note.** [`.cargo/config.toml`](.cargo/config.toml) builds a static musl binary
-> linked with the `rust-lld` that ships with Rust, so no system C compiler is needed. On a
-> machine with `cc`, delete that file to use the default target.
 
 ## The model
 
@@ -119,7 +131,8 @@ straight line. Orbits are therefore chains of straight segments that bend only o
 ## How it works
 
 - **Event-driven analysis.** Instead of stepping, the analyser jumps straight to the next sign
-  change. A four-element universe that takes 805 million steps to stop is settled within the 10,000-event budget.
+  change. A four-element universe that takes 805 million steps to stop
+  (`dynamics-engine show 4-1337051325212753`) is settled within the 10,000-event budget.
 - **Certificates, not step limits.** Cycles, rays and helices are proven. The helix test is the
   deterministic analogue of the Karp–Miller coverability argument for vector addition systems.
 - **Symmetry.** Canonical forms under the hyperoctahedral group (order `2^N N!`) and Burnside
@@ -134,18 +147,21 @@ straight line. Orbits are therefore chains of straight segments that bend only o
 
 ## Commands
 
+Run `dynamics-engine` with no arguments for the full help.
+
+
 | Command | What it does |
 |---|---|
-| `exact --size N` | exact fate of every reduced universe; `--samples` for N ≥ 4 |
-| `show --size N --index I` | one universe's drift rows and event trajectory |
-| `orbits --size N` | symmetry orbit counts (Burnside) |
+| `show <N-index>` | one universe's drift rows, event trajectory and fate |
+| `exact --size N` | exact fate of every universe of one size; `--samples` for N ≥ 4 |
 | `basins --size N` | fates over every start state in a box, per universe |
 | `basinmap --size N --index I` | which attractor each start in a box reaches |
 | `basinscan --size N` | basin maps and pattern features of every canonical universe |
-| `run --size N` | the original 10-step signature histogram (default command) |
+| `orbits --size N` | symmetry orbit counts (Burnside) |
+| `run --size N` | the original 10-step signature histogram (legacy) |
 
 Add `--json` for machine-readable output and `--model clamped` for the create/destroy variant
-with positivity. `cargo run --release -- --help` lists every option.
+with positivity. `dynamics-engine --help` lists every option.
 
 <details>
 <summary>The original 10-step heuristic and its quirks</summary>

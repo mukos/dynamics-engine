@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use system::multiverse::{exhaustive, sample, Execution, Exhaustive, Results, Sampled};
-use system::universe::Rules;
+use dynamics_engine::multiverse::{exhaustive, sample, Execution, Exhaustive, Results, Sampled};
+use dynamics_engine::universe::Rules;
 
 /// Output of the original TypeScript implementation (`ts-node real/init.ts`, size 2).
 fn original_size_2() -> Results {

@@ -329,6 +329,26 @@ footer{max-width:var(--sheet);margin:0 auto;padding:90px var(--gutter) calc(60px
 footer .sig{font-family:var(--hand);font-size:30px;color:var(--pencil)}
 footer p{color:var(--ink-3);font-size:14px}
 
+/* ---------- CLI ---------- */
+.cli{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:28px;margin-top:36px;align-items:start}
+@media (max-width:900px){.cli{grid-template-columns:1fr;gap:18px}}
+.install{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;counter-reset:in;min-width:0}
+.install li{position:relative;padding:12px 14px 13px 50px;background:var(--card);border:1px solid var(--edge);border-radius:12px;box-shadow:var(--shadow)}
+.install li::before{counter-increment:in;content:counter(in);position:absolute;left:15px;top:13px;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font:12px/1 var(--mono)}
+.install b{font-family:var(--serif);font-weight:500;font-size:17px;display:block;margin-bottom:6px}
+.install span{color:var(--ink-2);font-size:15px}
+.cmdrow{display:flex;align-items:center;gap:8px;background:#1D2433;border-radius:8px;padding:6px 6px 6px 12px}
+.cmdrow code{flex:1;min-width:0;color:#E8ECF3;font-size:13px;line-height:1.6;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+.cmdrow code::-webkit-scrollbar{display:none}
+.copy{flex:none;font:500 12px/1 var(--mono);color:#E8ECF3;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:6px 9px;cursor:pointer}
+.copy:hover{background:rgba(255,255,255,.18)}
+.copy:focus-visible{outline:2px solid #7FD1C4;outline-offset:2px}
+.cli .term{margin-top:0;font-size:12.5px;line-height:1.6}
+.term .hl{color:#7FD1C4}
+.cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+@media (max-width:640px){.cta-row .btn{flex:1 1 100%}}
+.verdict .cliline{margin:14px 0 6px;font-size:13px;color:var(--ink-3)}
+
 @media (prefers-reduced-motion: reduce){
   html{scroll-behavior:auto}
   .reveal,.fate{opacity:1!important;transform:none!important;transition:none}
@@ -349,6 +369,7 @@ footer p{color:var(--ink-3);font-size:14px}
       <li><a href="#census">Census</a></li>
       <li><a href="#explorer">Explorer</a></li>
       <li><a href="#yours">Try one</a></li>
+      <li><a href="#cli">Install</a></li>
       <li><a href="#engineering">Engineering</a></li>
       <li><a href="#theory">Rule &amp; theory</a></li>
     </ul>
@@ -370,6 +391,7 @@ footer p{color:var(--ink-3);font-size:14px}
     <div class="cta">
       <a class="btn primary" href="#fates">See the five fates <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3.5 8.5 8 13l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
       <a class="btn ghost" href="#yours">Try your own number</a>
+      <a class="btn ghost" href="https://github.com/mukos/dynamics-engine"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>Get the Rust CLI</a>
     </div>
     <div class="hero-stats">
       <div><b data-count="387420489">0</b><span>universes at N = 3</span></div>
@@ -477,8 +499,47 @@ footer p{color:var(--ink-3);font-size:14px}
 </section>
 
 <!-- §5 ---------------------------------------------------------------- -->
-<section class="sec" id="engineering">
+<section class="sec" id="cli">
   <span class="sec-no">§5</span>
+  <p class="eyebrow reveal">The same engine, on your machine</p>
+  <h2 class="reveal">Run it <i>yourself</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 9C80 4 170 13 250 8s104-3 142 1"/></svg></h2>
+  <p class="sub reveal">This page is a demo. The engine itself is a command-line tool written in Rust, with no dependencies. Install it with Cargo and any universe here, or the whole census, is one command away. Ids match: <code>#u=2-613</code> on this page is <code>show 2-613</code> in the terminal.</p>
+  <div class="cli">
+    <ol class="install reveal">
+      <li><b>Get Rust</b><span>Install the stable toolchain from <a href="https://rustup.rs">rustup.rs</a>.</span></li>
+      <li><b>Install the engine</b><div class="cmdrow"><code>cargo install --git https://github.com/mukos/dynamics-engine</code><button type="button" class="copy" aria-label="Copy command">copy</button></div></li>
+      <li><b>Ask about one universe</b><div class="cmdrow"><code>dynamics-engine show 2-613</code><button type="button" class="copy" aria-label="Copy command">copy</button></div></li>
+      <li><b>Or about all of them</b><div class="cmdrow"><code>dynamics-engine exact --size 3</code><button type="button" class="copy" aria-label="Copy command">copy</button></div></li>
+    </ol>
+    <pre class="term reveal d1" aria-label="example terminal session"><span class="p">$</span> dynamics-engine show 2-613
+reduced universe 613 (multiplicity 8, canonical: true):
+  element 0: pos = [  -1   -1 ]  neg = [   0    1 ]
+  element 1: pos = [   1    0 ]  neg = [  -1    0 ]
+events:
+  step      1  v = [  -1    0 ]  drift = [   0    1 ]
+  step      2  v = [  -1    1 ]  drift = [   1    1 ]
+  <span class="c">…</span>
+  step     16  v = [   1    0 ]  drift = [  -1   -1 ]
+<span class="hl">fate: cycle of period 10, repeating from step 6</span>
+
+<span class="p">$</span> dynamics-engine exact --size 3
+model sign, size 3: 387420489 reduced universes in 6.03s on 8 threads
+fate          reduced universes
+  cycle             3684504   0.951%
+  fixed            27800807   7.176%
+  helix             5025024   1.297%
+  ray             350630026  90.504%
+  spiral             280128   0.072%</pre>
+  </div>
+  <div class="cta-row reveal">
+    <a class="btn primary" href="https://github.com/mukos/dynamics-engine"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>Source on GitHub</a>
+    <a class="btn ghost" href="https://github.com/mukos/dynamics-engine#readme">Read the README</a>
+  </div>
+</section>
+
+<!-- §6 ---------------------------------------------------------------- -->
+<section class="sec" id="engineering">
+  <span class="sec-no">§6</span>
   <p class="eyebrow reveal">How it is built</p>
   <h2 class="reveal">The <i>engineering</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 9C80 13 160 3 240 8s112 1 152-1"/></svg></h2>
   <p class="sub reveal">A dependency-free Rust codebase that turns an exponential search into seconds: reduce the space, prove instead of simulate, and keep the hot loop out of the allocator's way.</p>
@@ -494,17 +555,11 @@ footer p{color:var(--ink-3);font-size:14px}
       <div class="hand" style="font-size:20px;margin-top:6px">80× faster, same answers</div></div>
     <div class="ecard reveal d2"><div class="hand">verified</div><h3>Tests that pin the maths</h3><p>Certificates are checked against brute-force simulation, the index odometer against decoding, and the original TypeScript histogram is kept as a regression test.</p></div>
   </div>
-  <pre class="term reveal" aria-label="commands"><span class="c"># every three-element universe, exactly, in about seven seconds</span>
-<span class="p">$</span> cargo run --release -- exact --size 3
-<span class="c"># two billion four-element universes, sampled with a fixed seed</span>
-<span class="p">$</span> cargo run --release -- exact --size 4 --samples 2000000000
-<span class="c"># replay one universe event by event</span>
-<span class="p">$</span> cargo run --release -- show --size 3 --index 27411247</pre>
 </section>
 
-<!-- §6 ---------------------------------------------------------------- -->
+<!-- §7 ---------------------------------------------------------------- -->
 <section class="sec" id="theory">
-  <span class="sec-no">§6</span>
+  <span class="sec-no">§7</span>
   <p class="eyebrow reveal">The mathematics</p>
   <h2 class="reveal">The <i>rule</i> and its theory<svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 8C90 12 170 3 250 8s100 2 142-1"/></svg></h2>
   <p class="sub reveal">Locally the system is trivial: a straight line. Globally it is as hard as computation itself. The interesting mathematics is in between, on the loops.</p>
@@ -748,7 +803,7 @@ const lcm = (a, b) => a / gcd(a, b) * b;
   document.querySelectorAll(".reveal, .hero-stats b").forEach(el => io.observe(el));
 })();
 
-// ---- §6 story: universe 613 told in four pictures ----------------------
+// ---- §7 story: universe 613 told in four pictures ----------------------
 (function story(){
   const svg = document.getElementById("storySvg"), cap = document.getElementById("storyCap");
   const U = decodeRows(613, 2);
@@ -1242,7 +1297,7 @@ const playCards = [];
   sizeBtns.forEach(b => b.addEventListener("click", () => { setN(Number(b.dataset.n)); err.textContent = ""; }));
   const longest = (DATA["3"] && DATA["3"].classes.filter(c => c.kind === "cycle").sort((a, b) => b.param - a.param)[0]) || null;
   const presets = [
-    {n: 2, i: 613, label: "613 · the cycle from §6"},
+    {n: 2, i: 613, label: "613 · the cycle from §7"},
     {n: 3, i: 27411247, label: "27411247 · a doubling spiral"},
     longest && {n: 3, i: longest.index, label: `${longest.index} · a cycle of ${fmt(longest.param)} steps`},
     {n: 3, i: (LEGEND.find(c => c.kind === "helix") || {index: 140914}).index, label: "a helix"},
@@ -1285,7 +1340,9 @@ const playCards = [];
     verdict.style.setProperty("--c", `var(--${kind})`);
     verdict.innerHTML = `<div class="fatebig">${v.kind}</div><p>${SENT[v.kind](v)}</p>
       <div class="rows"><span class="h">f</span><span class="h">d⁺, fires if v_f &gt; 0</span><span class="h">d⁻, fires if v_f &lt; 0</span>
-      ${rows.pos.map((r, f) => `<span class="f">${f}</span><span class="p">${cells(r)}</span><span class="n">${cells(rows.neg[f])}</span>`).join("")}</div>`;
+      ${rows.pos.map((r, f) => `<span class="f">${f}</span><span class="p">${cells(r)}</span><span class="n">${cells(rows.neg[f])}</span>`).join("")}</div>
+      <p class="cliline">The same universe in the <a href="#cli">Rust CLI</a>:</p>
+      <div class="cmdrow"><code>dynamics-engine show ${N}-${raw}</code><button type="button" class="copy" aria-label="Copy command">copy</button></div>`;
     link = `${location.origin}${location.pathname}#u=${N}-${raw}`;
     if (share) history.replaceState(null, "", `#u=${N}-${raw}`);
     if (scroll && card.getBoundingClientRect().top < 0) card.scrollIntoView({behavior: REDUCED ? "auto" : "smooth", block: "start"});
@@ -1303,6 +1360,12 @@ const playCards = [];
   if (m){ setN(Number(m[1])); input.value = m[2]; run(false, false); requestAnimationFrame(() => document.getElementById("yours").scrollIntoView()); }
   else { setN(3); run(false, false); }
 })();
+
+document.addEventListener("click", async e => {
+  const b = e.target.closest(".copy"); if (!b) return;
+  try { await navigator.clipboard.writeText(b.previousElementSibling.textContent); b.textContent = "copied"; } catch { b.textContent = "select it"; }
+  setTimeout(() => b.textContent = "copy", 1600);
+});
 
 // ---- animation loop for the cards --------------------------------------
 let acc = 0, last = performance.now();
