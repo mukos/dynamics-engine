@@ -1,121 +1,215 @@
-# system
+# Dynamics Engine
 
-Exhaustive and sampled simulation of small *activation-matrix* systems, written
-in Rust with no dependencies.
+**An exact classifier for small discrete dynamical systems, written in dependency-free Rust.**
 
-```bash
-cargo run --release -- --size 2          # every 4x4 matrix (65 536 universes), instant
-cargo run --release -- --size 3          # every 6x6 matrix (2^36 universes), ~40 min on 8 cores
-cargo run --release -- exact --size 4 --samples 2000000000   # size 4: sampled census, ~3 min
-cargo run --release -- --size 4 --samples 100000000 --seed 1   # 2^64 matrices: sample instead
-cargo run --release -- exact --size 3    # exact fates of all 3^18 reduced universes, ~7 s
-cargo run --release -- basins --size 2   # exact fates over all start states per universe
-cargo run --release -- orbits --size 4   # symmetry orbit counts
-cargo run --release -- show --size 3 --index 27411247   # one universe's event trajectory
-cargo run --release -- basinmap --size 2 --index 560 --radius 8   # which attractor each start reaches
-cargo run --release -- basinscan --size 2 --radius 12 --json      # basin maps of all canonical universes
-cargo test
+Every universe in this project follows one rule,
+
+```
+v(t+1) = v(t) + d(sign v(t))
 ```
 
-`cargo run --release -- --help` lists all commands and options. `run` (the
-default) prints the original 10-step *signature* histogram (see below) or JSON
-with `--json`. `exact`, `basins`, `orbits` and `show` are the research tools
-described in [docs/theory.md](docs/theory.md): the model reduces to
-`v(t+1) = v(t) + d(sign v(t))`, whose fates (fixed, cycle, ray, helix, spiral)
-can be certified without a step limit. Computed results live in `results/`.
+an integer state that moves by a velocity chosen only by the signs of its coordinates.
+The engine decides where each universe ends up: it stops, loops, escapes in a straight
+line, escapes while repeating, or spirals outward. For three elements it settles all
+**387,420,489** universes exactly, in about **6.5 seconds** on 8 cores.
+
+**[Live site](https://mukos.github.io/dynamics-engine/)** · **[Theory notes](docs/theory.md)** · **[Results](results/)**
+
+---
+
+## Contents
+
+- [Results](#results)
+- [Quick start](#quick-start)
+- [The model](#the-model)
+- [How it works](#how-it-works)
+- [Commands](#commands)
+- [The website](#the-website)
+- [Project layout](#project-layout)
+- [References](#references)
+
+## Results
+
+Each universe starts from the zero state, fires every channel once, and is then followed
+until its fate is proven.
+
+| Elements | Universes | Fixed | Cycle | Ray | Helix | Spiral | Undecided |
+|---|---|---|---|---|---|---|---|
+| N = 2 | all 6,561 | 22.634 % | 1.341 % | 76.025 % | 0 | 0 | 0 |
+| N = 3 | all 387,420,489 | 7.176 % | 0.951 % | 90.504 % | 1.297 % | 0.072 % | 0 |
+| N = 4 | 2·10⁹ sampled | 1.740 % | 0.316 % | 95.061 % | 2.745 % | 0.137 % | 7,952 |
+
+The N = 4 rows are estimates from a uniform sample of the 1.85·10¹⁵ universes, with 95 %
+confidence half-widths below 0.001 percentage points.
+
+Other findings:
+
+- **Every three-element universe receives a fate.** Fixed, cycle, ray and helix come with
+  certificates; spirals are the empirical remainder.
+- **The longest cycle at N = 3 has period 1,510.** The longest transient plus period is 1,824 steps.
+- **Symmetry cuts the space by about 48×.** Fates are invariant under signed permutations of
+  the elements, giving 873 classes at N = 2 and 8,093,160 at N = 3.
+- **Basins of attraction come in three families**: sectors (55 % of two-element universes),
+  stripes from conserved linear functionals (40 %) and parity checkerboards (1 %).
+
+Full tables, proofs and open questions are in [docs/theory.md](docs/theory.md).
+
+## Quick start
+
+You need a stable Rust toolchain ([rustup.rs](https://rustup.rs)). There are no crate
+dependencies.
+
+```bash
+git clone https://github.com/mukos/dynamics-engine.git
+cd dynamics-engine
+cargo build --release
+```
+
+Classify every three-element universe:
+
+```bash
+cargo run --release -- exact --size 3
+```
+
+Replay one universe event by event (this one is a spiral whose loop doubles each lap):
+
+```bash
+cargo run --release -- show --size 3 --index 27411247
+```
+
+Run the tests:
+
+```bash
+cargo test --release
+```
+
+> **Toolchain note.** [`.cargo/config.toml`](.cargo/config.toml) builds a static musl binary
+> linked with the `rust-lld` that ships with Rust, so no system C compiler is needed. On a
+> machine with `cc`, delete that file to use the default target.
 
 ## The model
 
-A universe has `N` elements. Element `e` has two **channels**: `2e` (positive,
-holds `count ≥ 0`) and `2e+1` (negative, holds `antiCount ≤ 0`). A universe is
-defined by a `2N × 2N` 0/1 **activation matrix**: `M[r][c] = 1` means "when
-channel `r` fires, channel `c` receives one unit".
+A universe has `N` elements. Element `e` has a positive channel and a negative channel, and a
+`2N × 2N` matrix of zeros and ones says which channels feed which. At every step each active
+channel pushes its row, each element collapses to its net value, and the sign of that value
+decides which of its channels fires next. On the first step every channel fires.
 
-Every step:
-
-1. **Activation.** Each active channel `r` pushes its row: a 1 in column `c`
-   adds `+1` to channel `c` if `c` is even, `−1` if `c` is odd.
-2. **Evaluation.** Each element collapses to its net value `count + antiCount`.
-   Positive net → keeps `count`, clears `antiCount`, and its positive channel
-   fires next step. Negative net → the mirror. Zero → both cleared, nothing fires.
-
-A run stops after `--steps` steps (default 10), when nothing fires, or when the
-firing channels add nothing. All channels fire on the first step.
-
-### Signatures
-
-After a run, each channel gets one symbol, and the universe's signature is the
-symbols of all channels joined by commas (`count,anti` per element):
-
-| symbol | meaning |
-|--------|---------|
-| `\|`   | the run ended before the step limit (dead or converged) |
-| `0`    | the final value already appeared earlier (bounded / periodic) |
-| `1`    | positive channel never repeated a value (monotone growth) |
-| `-1`   | negative channel never repeated a value (monotone decline) |
-
-The multiverse tallies how many matrices produce each signature.
-
-### Scaling
-
-The number of matrices is `2^(4N²)`; that exponent, not the language, is the
-cost.
-
-| N | channels | matrices | exhaustive on 8 cores (~36 M universes/s) |
-|---|----------|----------|--------------------------------------------|
-| 1 | 2 | 16 | instant |
-| 2 | 4 | 65 536 | instant |
-| 3 | 6 | 2^36 ≈ 6.9·10^10 | ~30 min |
-| 4 | 8 | 2^64 ≈ 1.8·10^19 | ~16 000 years — use `--samples` |
-
-For `N ≥ 4` use `--samples <n> --seed <s>` (reproducible random matrices).
-Exhaustive runs can be sharded across machines with `--offset i --stride k`
-(`i` in `0..k`); sum the JSON outputs to merge.
-
-## What is known (short version)
-
-* Only the differences `M[r][2e] − M[r][2e+1]` matter: `2^(4N²)` matrices
-  collapse to `3^(2N²)` reduced universes (177× fewer at N=3).
-* Fates can be proven exactly: at N=3, 99.9 % of reduced universes are certified
-  fixed / cycle / ray / helix; the rest are empirically diverging spirals.
-* Fates are invariant under signed permutations of elements (group of order
-  `2^N N!`); the 10-step heuristic misclassifies ~0.2 % of matrices at N=3.
-* The fate depends on the start state for ~75 % of universes; only ~13 % (N=2)
-  and ~2.4 % (N=3) are bounded from every start.
-* Basins come in three families: conic sectors (55 % at N=2), stripe families
-  from conserved linear functionals (40 %), and parity checkerboards (1 %).
-  Browse them in `docs/basin-atlas.html` (serve `docs/` locally).
-* Full analysis, tables, literature and open questions: [docs/theory.md](docs/theory.md).
-
-## Known quirks (kept for compatibility)
-
-* **Classifier skips the previous step.** The final snapshot is compared with
-  every earlier snapshot *except* the one immediately before it. A channel that
-  changed at every step but the last is therefore still `1`/`-1`. This
-  reproduces the original TypeScript output (`tests/multiverse.rs` pins the
-  size-2 histogram). Pass `--fixed-cycle` to compare against all earlier steps.
-* **Signature strings** use the original format, so old and new results can be
-  diffed directly.
-
-## Layout
+**Reduction.** Only the difference between the two bits a row sends to an element matters. Each
+pair collapses to a value in {−1, 0, +1}, so the `2^(4N²)` bit matrices reduce to `3^(2N²)`
+universes, 177× fewer at N = 3. What remains is two `N × N` drift tables `d⁺` and `d⁻`, and the
+rule above, where
 
 ```
-src/universe.rs    one universe: activation, evaluation, 10-step classification
-src/matrix.rs      index <-> matrix decoding, random matrices
-src/multiverse.rs  exhaustive / sampled runs, threading, progress, tallies
-src/exact.rs       reduced model, event-driven exact analysis, certificates, symmetry group
-src/experiments.rs censuses (exact fates vs heuristic), basins, clamped variant
-src/parallel.rs    fork-join helper
-src/main.rs        command-line interface (run / exact / basins / orbits / show)
-src/rng.rs         SplitMix64 (deterministic sampling)
-tests/             unit tests, the size-2 regression histogram, certificate tests
-results/           computed histograms and censuses
-docs/theory.md     mathematical analysis and findings
-docs/entity-sketch.ts  earlier design sketch (Entity/Action/Event/Cause), not built
+d(s) = Σ_{s_f = +} d⁺_f + Σ_{s_f = −} d⁻_f
 ```
 
-## Toolchain note
+Inside a quadrant the signs do not change, so the velocity is constant and the orbit is a
+straight line. Orbits are therefore chains of straight segments that bend only on the axes.
 
-`.cargo/config.toml` builds a static musl binary linked with the `rust-lld`
-bundled in the Rust toolchain, so no system C compiler is needed. On a machine
-that has `cc`, delete that file to use the default target.
+**The five fates.**
+
+| Fate | What happens | Certificate |
+|---|---|---|
+| Fixed | the velocity reaches zero | `d(sign v) = 0` |
+| Cycle | the state returns to itself | a repeated state |
+| Ray | it escapes in a straight line | every coordinate moves away from zero |
+| Helix | it escapes while repeating | a segment replays shifted by `D` with no sign change |
+| Spiral | it winds outward | none: 8 consecutive growing returns to one sign pattern |
+
+## How it works
+
+- **Event-driven analysis.** Instead of stepping, the analyser jumps straight to the next sign
+  change. A four-element universe that takes 805 million steps to stop is settled within the 10,000-event budget.
+- **Certificates, not step limits.** Cycles, rays and helices are proven. The helix test is the
+  deterministic analogue of the Karp–Miller coverability argument for vector addition systems.
+- **Symmetry.** Canonical forms under the hyperoctahedral group (order `2^N N!`) and Burnside
+  counts of the orbits.
+- **Allocation-free hot loop.** Static musl builds serialise threads on `malloc`. One reusable
+  workspace per thread and an index odometer took the N = 3 census from 527 s to 6.5 s.
+- **Reproducible scale.** Sampling uses a seeded SplitMix64; exhaustive runs shard across
+  machines with `--offset` and `--stride` and merge with `scripts/merge-results.py`.
+- **Tests that pin the maths.** Certificates are checked against brute-force simulation, the
+  odometer against index decoding, and the original TypeScript histogram is kept as a
+  regression test.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `exact --size N` | exact fate of every reduced universe; `--samples` for N ≥ 4 |
+| `show --size N --index I` | one universe's drift rows and event trajectory |
+| `orbits --size N` | symmetry orbit counts (Burnside) |
+| `basins --size N` | fates over every start state in a box, per universe |
+| `basinmap --size N --index I` | which attractor each start in a box reaches |
+| `basinscan --size N` | basin maps and pattern features of every canonical universe |
+| `run --size N` | the original 10-step signature histogram (default command) |
+
+Add `--json` for machine-readable output and `--model clamped` for the create/destroy variant
+with positivity. `cargo run --release -- --help` lists every option.
+
+<details>
+<summary>The original 10-step heuristic and its quirks</summary>
+
+`run` reproduces the project's first TypeScript version. After a fixed number of steps it gives
+each channel a symbol and tallies the joined symbols as a *signature*:
+
+| Symbol | Meaning |
+|---|---|
+| `\|` | the run ended before the step limit |
+| `0` | the final value appeared earlier (bounded or periodic) |
+| `1` | the positive channel never repeated a value |
+| `-1` | the negative channel never repeated a value |
+
+The comparison skips the step immediately before the last one, exactly as the original did, so
+old and new histograms can be diffed. Pass `--fixed-cycle` to compare against every earlier step.
+The heuristic misclassifies about 0.2 % of matrices at N = 3, which is why `exact` exists.
+
+| N | Matrices | Exhaustive on 8 cores |
+|---|---|---|
+| 2 | 65,536 | instant |
+| 3 | 2³⁶ ≈ 6.9·10¹⁰ | about 30 minutes |
+| 4 | 2⁶⁴ ≈ 1.8·10¹⁹ | about 16,000 years, so use `--samples` |
+
+</details>
+
+## The website
+
+[`docs/`](docs/) is the project's landing page, served by GitHub Pages. It animates real
+universes in the browser and includes a JavaScript port of the analyser, so visitors can type
+any universe index and see its fate.
+
+```bash
+python3 scripts/build-dynamics.py   # results/*.json + scripts/dynamics.template.html → docs/index.html
+python3 scripts/serve-docs.py       # http://127.0.0.1:8766, caching disabled
+```
+
+## Project layout
+
+```
+src/exact.rs        reduced model, event-driven analysis, certificates, symmetry group
+src/experiments.rs  censuses, basins, basin scans, the clamped variant
+src/multiverse.rs   exhaustive and sampled runs of the original model
+src/universe.rs     one universe of the original model and its 10-step classification
+src/matrix.rs       index ↔ matrix decoding, random matrices
+src/parallel.rs     fork-join helpers
+src/rng.rs          SplitMix64
+src/main.rs         command-line interface
+tests/              certificate, decoding and regression tests
+results/            computed censuses, basin scans and orbit counts
+docs/               landing page and theory notes
+scripts/            site builders, local server, shard merging
+```
+
+## References
+
+- E. Asarin, O. Maler, A. Pnueli. *Reachability analysis of dynamical systems having
+  piecewise-constant derivatives.* Theoretical Computer Science 138 (1995). Reachability is
+  decidable in two dimensions and undecidable from three, which is why spirals stay empirical.
+- L. Glass, S. Kauffman. *The logical analysis of continuous, non-linear biochemical control
+  networks.* Journal of Theoretical Biology 39 (1973).
+- R. M. Karp, R. E. Miller. *Parallel program schemata.* Journal of Computer and System
+  Sciences 3 (1969).
+
+## License
+
+[MIT](LICENSE)
