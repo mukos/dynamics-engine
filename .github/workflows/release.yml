@@ -1,0 +1,118 @@
+# Build dynamics-engine for five platforms and attach the archives to a GitHub release.
+# Runs when a version tag (v*) is pushed; can also be started by hand for an existing tag.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to (re)build, e.g. v2.0.0"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: x86_64-unknown-linux-musl, os: ubuntu-latest, musl: true, test: true }
+          - { target: aarch64-unknown-linux-musl, os: ubuntu-24.04-arm, musl: true }
+          - { target: x86_64-apple-darwin, os: macos-latest }
+          - { target: aarch64-apple-darwin, os: macos-latest, test: true }
+          - { target: x86_64-pc-windows-msvc, os: windows-latest, test: true }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Install toolchain
+        shell: bash
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add ${{ matrix.target }}
+
+      - name: Install musl tools
+        if: matrix.musl
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Test
+        if: matrix.test
+        shell: bash
+        run: cargo test --release --target ${{ matrix.target }}
+
+      - name: Build
+        shell: bash
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Package
+        shell: bash
+        run: |
+          name=dynamics-engine-${{ matrix.target }}
+          mkdir -p dist
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            cp target/${{ matrix.target }}/release/dynamics-engine.exe README.md LICENSE dist/
+            (cd dist && 7z a -tzip ../$name.zip dynamics-engine.exe README.md LICENSE >/dev/null)
+          else
+            cp target/${{ matrix.target }}/release/dynamics-engine README.md LICENSE dist/
+            tar -czf $name.tar.gz -C dist dynamics-engine README.md LICENSE
+          fi
+          # Smoke test, except for Intel macOS binaries built on an Apple-silicon runner.
+          if [[ "${{ matrix.target }}" != x86_64-apple-darwin ]]; then ./dist/dynamics-engine* show 2-613 | tail -2; fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: dynamics-engine-${{ matrix.target }}.*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+
+      - name: Checksums
+        run: cd assets && sha256sum dynamics-engine-* > SHA256SUMS && cat SHA256SUMS
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cat > notes.md <<'EOF'
+          Prebuilt `dynamics-engine` binaries. Download the archive for your platform, unpack it and run:
+
+          ```
+          ./dynamics-engine show 2-613
+          ./dynamics-engine exact --size 3
+          ```
+
+          | Platform | Archive |
+          |---|---|
+          | Linux x86_64 (static) | `dynamics-engine-x86_64-unknown-linux-musl.tar.gz` |
+          | Linux ARM64 (static) | `dynamics-engine-aarch64-unknown-linux-musl.tar.gz` |
+          | macOS Apple silicon | `dynamics-engine-aarch64-apple-darwin.tar.gz` |
+          | macOS Intel | `dynamics-engine-x86_64-apple-darwin.tar.gz` |
+          | Windows x86_64 | `dynamics-engine-x86_64-pc-windows-msvc.zip` |
+
+          `SHA256SUMS` lists the checksums. The binaries are not code-signed; see the README if macOS or Windows blocks the first run.
+          EOF
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" assets/* --clobber
+          else
+            gh release create "$TAG" assets/* --title "dynamics-engine $TAG" --notes-file notes.md
+          fi

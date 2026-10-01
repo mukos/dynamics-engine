@@ -56,14 +56,43 @@ Full tables, proofs and open questions are in [docs/theory.md](docs/theory.md).
 
 ## Quick start
 
-The engine is a command-line tool. You need a stable Rust toolchain
-([rustup.rs](https://rustup.rs)); there are no crate dependencies.
+The engine is a single command-line program, `dynamics-engine`.
+
+### Download a prebuilt binary
+
+[Releases](https://github.com/mukos/dynamics-engine/releases/latest) has archives for five
+platforms, each holding the binary, this README and the license:
+
+| Platform | Archive |
+|---|---|
+| Linux x86_64 (static) | [`dynamics-engine-x86_64-unknown-linux-musl.tar.gz`](https://github.com/mukos/dynamics-engine/releases/latest/download/dynamics-engine-x86_64-unknown-linux-musl.tar.gz) |
+| Linux ARM64 (static) | [`dynamics-engine-aarch64-unknown-linux-musl.tar.gz`](https://github.com/mukos/dynamics-engine/releases/latest/download/dynamics-engine-aarch64-unknown-linux-musl.tar.gz) |
+| macOS Apple silicon | [`dynamics-engine-aarch64-apple-darwin.tar.gz`](https://github.com/mukos/dynamics-engine/releases/latest/download/dynamics-engine-aarch64-apple-darwin.tar.gz) |
+| macOS Intel | [`dynamics-engine-x86_64-apple-darwin.tar.gz`](https://github.com/mukos/dynamics-engine/releases/latest/download/dynamics-engine-x86_64-apple-darwin.tar.gz) |
+| Windows x86_64 | [`dynamics-engine-x86_64-pc-windows-msvc.zip`](https://github.com/mukos/dynamics-engine/releases/latest/download/dynamics-engine-x86_64-pc-windows-msvc.zip) |
+
+On Linux, for example:
+
+```bash
+curl -L https://github.com/mukos/dynamics-engine/releases/latest/download/dynamics-engine-x86_64-unknown-linux-musl.tar.gz | tar xz
+./dynamics-engine show 2-613
+```
+
+The binaries are not code-signed. If macOS refuses to open one downloaded in a browser, run
+`xattr -d com.apple.quarantine dynamics-engine`; on Windows, choose *More info → Run anyway*.
+`SHA256SUMS` in each release lists the checksums.
+
+### Or build it with Cargo
+
+With a stable Rust toolchain ([rustup.rs](https://rustup.rs)); there are no crate dependencies:
 
 ```bash
 cargo install --git https://github.com/mukos/dynamics-engine
 ```
 
-That puts `dynamics-engine` on your `PATH`. Look at one universe:
+### First commands
+
+Look at one universe:
 
 ```bash
 dynamics-engine show 2-613
@@ -90,7 +119,7 @@ three-element universe:
 dynamics-engine exact --size 3
 ```
 
-To work on the code instead:
+### Working on the code
 
 ```bash
 git clone https://github.com/mukos/dynamics-engine.git
@@ -98,6 +127,10 @@ cd dynamics-engine
 cargo run --release -- show 3-27411247
 cargo test --release
 ```
+
+Pushing a version tag (`git tag v2.1.0 && git push origin v2.1.0`) runs
+[`.github/workflows/release.yml`](.github/workflows/release.yml), which tests, builds the five
+archives and publishes them as a release.
 
 ## The model
 
