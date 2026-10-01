@@ -124,31 +124,6 @@ code{font-family:var(--mono);font-size:.88em}
 .reveal.in{opacity:1;transform:none}
 .d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}.d4{transition-delay:.32s}
 
-/* ---------- the rule: scrollytelling ---------- */
-.story{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:56px;margin-top:40px}
-.steps{padding-bottom:20vh}
-.step{min-height:72vh;display:flex;flex-direction:column;justify-content:center;opacity:.28;transition:opacity .5s ease}
-.step.on{opacity:1}
-.step h3{font-family:var(--serif);font-weight:500;font-size:28px;line-height:1.15;margin:0 0 10px}
-.step p{margin:0 0 12px;color:var(--ink-2);max-width:32em}
-.formula{font-family:var(--math);font-size:21px;color:var(--ink);background:var(--card);border:1px solid var(--edge);border-radius:8px;padding:10px 14px;display:inline-block;margin:4px 0 12px;box-shadow:var(--shadow);max-width:100%;overflow-x:auto}
-.figure{position:sticky;top:96px;height:min(76vh,640px);display:flex;align-items:center;justify-content:center}
-.board{width:100%;max-width:560px;aspect-ratio:1/1;background:var(--card);border:1px solid var(--edge);border-radius:14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
-.board svg{width:100%;height:100%;display:block}
-.layer{transition:opacity .7s ease,transform .9s cubic-bezier(.2,.7,.2,1);transform-origin:260px 260px}
-.layer.off{opacity:0;transform:scale(.94)}
-.board .cap{position:absolute;left:16px;bottom:10px;right:16px;font-family:var(--hand);font-size:21px;color:var(--pencil);text-align:center;line-height:1.1}
-@media (max-width:900px){
-  .story{grid-template-columns:1fr;gap:0;margin-top:24px}
-  .figure{order:-1;top:60px;height:auto;z-index:2;padding:8px 0 14px;background:linear-gradient(var(--paper) 88%,rgba(252,251,247,0))}
-  .board{max-width:min(92vw,44vh)}
-  .board .cap{font-size:18px}
-  .step{min-height:64vh;opacity:1}
-  .step>div{background:rgba(255,255,255,.96);border:1px solid var(--edge);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
-  .step h3{font-size:23px}
-  .formula{font-size:18px}
-}
-
 /* ---------- five fates ---------- */
 .fates{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:40px 0 26px}
 @media (max-width:1060px){.fates{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -310,20 +285,45 @@ a.stat .k::after{content:" ↓";font-size:14px}
 .term .c{color:#8C99AE}
 .term .p{color:#7FD1C4}
 
-/* ---------- theory ---------- */
-.theory{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:40px;margin-top:40px;align-items:start}
-@media (max-width:900px){.theory{grid-template-columns:1fr;gap:20px}}
-.returnmap{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:22px;box-shadow:var(--shadow)}
-.returnmap .big{font-family:var(--math);font-size:clamp(26px,3vw,34px);text-align:center;margin:8px 0 16px}
-.returnmap table{width:100%;border-collapse:collapse;font-size:15px}
-.returnmap td{padding:9px 6px;border-top:1px dashed var(--edge);vertical-align:top}
-.returnmap td:first-child{font-family:var(--math);font-size:17px;white-space:nowrap;width:34%}
-@media (max-width:520px){.returnmap td{display:block;width:auto!important;padding:4px 0}.returnmap td:first-child{padding-top:10px}.returnmap td+td{border-top:none}}
-.refs{display:grid;gap:12px}
-.ref{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
-.ref b{font-family:var(--serif);font-weight:500;font-size:18px;display:block}
-.ref span{font-size:14px;color:var(--ink-2)}
-.ref cite{display:block;font-style:normal;font-size:12.5px;color:var(--ink-3);margin-top:4px}
+/* ---------- the rule & theory ---------- */
+.rulegrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:40px;margin-top:40px;align-items:start}
+.figure{position:sticky;top:96px}
+.board{width:100%;max-width:520px;margin:0 auto;aspect-ratio:1/1;background:var(--card);border:1px solid var(--edge);border-radius:14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.board svg{width:100%;height:100%;display:block}
+.layer{transition:opacity .7s ease,transform .9s cubic-bezier(.2,.7,.2,1);transform-origin:260px 260px}
+.layer.off{opacity:0;transform:scale(.94)}
+.board .cap{position:absolute;left:16px;bottom:10px;right:16px;font-family:var(--hand);font-size:21px;color:var(--pencil);text-align:center;line-height:1.1}
+.steps{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:8px;counter-reset:st}
+.step{all:unset;box-sizing:border-box;display:block;width:100%;cursor:pointer;position:relative;padding:11px 16px 11px 50px;background:var(--card);border:1px solid var(--edge);border-radius:12px;color:var(--ink-2);font-size:15px;line-height:1.5;transition:border-color .3s,box-shadow .3s}
+.step::before{counter-increment:st;content:counter(st);position:absolute;left:15px;top:12px;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--ink-3);display:grid;place-items:center;font-family:var(--mono);font-size:12px;color:var(--ink-3);transition:background .3s,color .3s,border-color .3s}
+.step:hover{border-color:var(--ink-3)}
+.step:focus-visible{outline:2px solid var(--fixed);outline-offset:2px}
+.step[aria-pressed="true"]{border-color:var(--fixed);box-shadow:var(--shadow)}
+.step[aria-pressed="true"]::before{background:var(--fixed);border-color:var(--fixed);color:#fff}
+.step b{font-family:var(--serif);font-weight:500;font-size:17px;color:var(--ink)}
+.step .f{font-family:var(--math);color:var(--ink);white-space:nowrap}
+.returnmap{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:16px 20px;box-shadow:var(--shadow)}
+.returnmap .hand{font-size:20px}
+.returnmap .big{font-family:var(--math);font-size:21px;color:var(--ink);white-space:nowrap}
+.returnmap table{width:100%;border-collapse:collapse;font-size:14.5px;margin-top:6px}
+.returnmap td{padding:7px 6px;border-top:1px dashed var(--edge);vertical-align:top}
+.returnmap td:first-child{font-family:var(--math);font-size:16px;white-space:nowrap;width:30%}
+.refs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:28px}
+.ref{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:13px 15px;box-shadow:var(--shadow)}
+.ref b{font-family:var(--serif);font-weight:500;font-size:17px;display:block;margin-bottom:2px}
+.ref span{font-size:13.5px;color:var(--ink-2)}
+.ref cite{display:block;font-style:normal;font-size:12px;color:var(--ink-3);margin-top:6px}
+@media (max-width:1060px){.refs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){
+  .rulegrid{grid-template-columns:1fr;gap:18px;margin-top:26px}
+  .figure{position:static}
+  .board{max-width:min(100%,420px)}
+  .board .cap{font-size:18px}
+}
+@media (max-width:560px){
+  .refs{grid-template-columns:1fr}
+  .returnmap td{display:block;width:auto!important;padding:3px 0}.returnmap td:first-child{padding-top:9px}.returnmap td+td{border-top:none}
+}
 
 footer{max-width:var(--sheet);margin:0 auto;padding:90px var(--gutter) calc(60px + env(safe-area-inset-bottom));text-align:center}
 footer .sig{font-family:var(--hand);font-size:30px;color:var(--pencil)}
@@ -334,7 +334,6 @@ footer p{color:var(--ink-3);font-size:14px}
   .reveal,.fate{opacity:1!important;transform:none!important;transition:none}
   .cbar,.pbar .fill{transform:none!important;transition:none}
   .scroll-cue{animation:none}
-  .step{opacity:1}
 }
 </style>
 </head>
@@ -346,13 +345,12 @@ footer p{color:var(--ink-3);font-size:14px}
   <div class="in">
     <a class="brand" href="#top"><svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 16l6-9 4 11-12 6-7-8 9-8" fill="none" stroke="#2F55D4" stroke-width="2.4" stroke-linejoin="round"/><circle cx="16" cy="16" r="2.6" fill="#1D2433"/></svg>Dynamics <i>Engine</i></a>
     <ul>
-      <li><a href="#rule">The rule</a></li>
       <li><a href="#fates">Five fates</a></li>
       <li><a href="#census">Census</a></li>
       <li><a href="#explorer">Explorer</a></li>
       <li><a href="#yours">Try one</a></li>
       <li><a href="#engineering">Engineering</a></li>
-      <li><a href="#theory">Theory</a></li>
+      <li><a href="#theory">Rule &amp; theory</a></li>
     </ul>
     <a class="gh" href="https://github.com/mukos/dynamics-engine"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>Source</a>
   </div>
@@ -385,42 +383,8 @@ footer p{color:var(--ink-3);font-size:14px}
 
 <main>
 <!-- §1 ---------------------------------------------------------------- -->
-<section class="sec" id="rule">
-  <span class="sec-no">§1</span>
-  <p class="eyebrow reveal">The model</p>
-  <h2 class="reveal">One <i>rule</i>, every universe<svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 10C80 3 160 13 240 7s110 3 152 1"/></svg></h2>
-  <p class="sub reveal">Scroll through how a matrix of zeros and ones becomes a piecewise-constant vector field, and why that makes every orbit a chain of straight segments.</p>
-  <div class="story">
-    <div class="steps">
-      <div class="step" data-step="0"><div>
-        <h3>A universe is a matrix</h3>
-        <p>Each of the <span class="mi">N</span> elements has a positive and a negative channel. A <span class="mi">2N × 2N</span> matrix of zeros and ones says which channels feed which. This is universe 613 at <span class="mi">N</span> = 2.</p>
-        <span class="hand">16 bits · 65,536 such universes</span>
-      </div></div>
-      <div class="step" data-step="1"><div>
-        <h3>Only differences matter</h3>
-        <p>A channel pushing both the positive and the negative side of an element cancels out. Each pair of bits collapses to one value in {−1, 0, +1}, giving two small drift tables.</p>
-        <div class="formula">2<sup>4N²</sup> matrices  →  3<sup>2N²</sup> universes</div>
-        <p>At <span class="mi">N</span> = 3 that is 177× less work, before any symmetry.</p>
-      </div></div>
-      <div class="step" data-step="2"><div>
-        <h3>Signs choose the velocity</h3>
-        <p>Inside a quadrant every coordinate keeps its sign, so the same rows fire every step and the velocity is constant. The plane splits into regions with one arrow each.</p>
-        <div class="formula"><i>d</i>(<i>s</i>) = Σ<sub><i>s<sub>f</sub></i> = +</sub> <i>d</i><sup>+</sup><sub><i>f</i></sub> + Σ<sub><i>s<sub>f</sub></i> = −</sub> <i>d</i><sup>−</sup><sub><i>f</i></sub></div>
-      </div></div>
-      <div class="step" data-step="3"><div>
-        <h3>So orbits are polygons</h3>
-        <p>From the zero state, every channel fires once. After that the state slides straight until a coordinate crosses zero, then turns. Universe 613 wanders for 4 steps, then repeats a 10-step loop forever.</p>
-        <span class="hand">a cycle of period 10, proven by a repeated state</span>
-      </div></div>
-    </div>
-    <div class="figure"><div class="board"><svg id="storySvg" viewBox="0 0 520 520" role="img" aria-label="universe 613: matrix, drift tables, vector field and orbit"></svg><div class="cap" id="storyCap"></div></div></div>
-  </div>
-</section>
-
-<!-- §2 ---------------------------------------------------------------- -->
 <section class="sec" id="fates">
-  <span class="sec-no">§2</span>
+  <span class="sec-no">§1</span>
   <p class="eyebrow reveal">Live, from the zero state</p>
   <h2 class="reveal">Five <i>fates</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 9C90 14 170 4 250 9s100-2 142 0"/></svg></h2>
   <p class="sub reveal">Every orbit ends in one of five ways. Four come with a certificate the engine checks exactly; the fifth is the honest remainder, recognised from growth it cannot yet prove. Each card is a real three-element universe, simulated in your browser.</p>
@@ -443,9 +407,9 @@ footer p{color:var(--ink-3);font-size:14px}
   </div>
 </section>
 
-<!-- §3 ---------------------------------------------------------------- -->
+<!-- §2 ---------------------------------------------------------------- -->
 <section class="sec" id="census">
-  <span class="sec-no">§3</span>
+  <span class="sec-no">§2</span>
   <p class="eyebrow reveal">Exhaustive where possible, sampled where not</p>
   <h2 class="reveal">The <i>census</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 8C70 3 150 13 230 8s120-4 162 2"/></svg></h2>
   <p class="sub reveal">Every universe started from zero, classified by its fate. Escape dominates and grows with size; the rare fates are where the structure lives.</p>
@@ -464,9 +428,9 @@ footer p{color:var(--ink-3);font-size:14px}
   </div>
 </section>
 
-<!-- §4 ---------------------------------------------------------------- -->
+<!-- §3 ---------------------------------------------------------------- -->
 <section class="sec" id="explorer">
-  <span class="sec-no">§4</span>
+  <span class="sec-no">§3</span>
   <p class="eyebrow reveal">Typical and rarest, by size</p>
   <h2 class="reveal">The <i>explorer</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 10C90 4 180 12 260 7s96 2 132 0"/></svg></h2>
   <p class="sub reveal">Within each fate the census records a finer class: the period, or the step at which the certificate arrived. Here are the most common class and the rarest ones, each shown by the universe with the smallest index.</p>
@@ -478,9 +442,9 @@ footer p{color:var(--ink-3);font-size:14px}
   <div id="page"></div>
 </section>
 
-<!-- §5 ---------------------------------------------------------------- -->
+<!-- §4 ---------------------------------------------------------------- -->
 <section class="sec" id="yours">
-  <span class="sec-no">§5</span>
+  <span class="sec-no">§4</span>
   <p class="eyebrow reveal">Pick any universe</p>
   <h2 class="reveal">Try <i>your</i> number<svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 9C80 4 170 13 250 8s104-3 142 1"/></svg></h2>
   <p class="sub reveal">Every universe has an index: its drift tables read as one number in base 3. Type any index, and your browser decodes it, runs it from zero and decides its fate with the same certificates the engine uses.</p>
@@ -512,9 +476,9 @@ footer p{color:var(--ink-3);font-size:14px}
   </div>
 </section>
 
-<!-- §6 ---------------------------------------------------------------- -->
+<!-- §5 ---------------------------------------------------------------- -->
 <section class="sec" id="engineering">
-  <span class="sec-no">§6</span>
+  <span class="sec-no">§5</span>
   <p class="eyebrow reveal">How it is built</p>
   <h2 class="reveal">The <i>engineering</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 9C80 13 160 3 240 8s112 1 152-1"/></svg></h2>
   <p class="sub reveal">A dependency-free Rust codebase that turns an exponential search into seconds: reduce the space, prove instead of simulate, and keep the hot loop out of the allocator's way.</p>
@@ -538,29 +502,37 @@ footer p{color:var(--ink-3);font-size:14px}
 <span class="p">$</span> cargo run --release -- show --size 3 --index 27411247</pre>
 </section>
 
-<!-- §7 ---------------------------------------------------------------- -->
+<!-- §6 ---------------------------------------------------------------- -->
 <section class="sec" id="theory">
-  <span class="sec-no">§7</span>
-  <p class="eyebrow reveal">Where this sits in dynamical systems</p>
-  <h2 class="reveal">The <i>theory</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 8C90 12 170 3 250 8s100 2 142-1"/></svg></h2>
+  <span class="sec-no">§6</span>
+  <p class="eyebrow reveal">The mathematics</p>
+  <h2 class="reveal">The <i>rule</i> and its theory<svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 8C90 12 170 3 250 8s100 2 142-1"/></svg></h2>
   <p class="sub reveal">Locally the system is trivial: a straight line. Globally it is as hard as computation itself. The interesting mathematics is in between, on the loops.</p>
-  <div class="theory">
-    <div class="returnmap reveal">
-      <div class="hand">around one loop of quadrants, the return map is affine</div>
-      <div class="big"><i>x</i> ↦ <i>A</i><i>x</i> + <i>b</i></div>
-      <table>
-        <tr><td><i>A</i> = <i>I</i>, <i>b</i> = 0</td><td>the state comes back exactly: a <b style="color:var(--cycle)">cycle</b></td></tr>
-        <tr><td><i>A</i> = <i>I</i>, <i>b</i> ≠ 0</td><td>it comes back shifted by the same vector: a <b style="color:var(--helix)">helix</b></td></tr>
-        <tr><td>ρ(<i>A</i>) &gt; 1</td><td>each return is larger, like <i>x</i> ↦ 2<i>x</i> + 13: a <b style="color:var(--spiral)">spiral</b></td></tr>
-        <tr><td>no loop at all</td><td>a quadrant it never leaves: a <b style="color:var(--ray)">ray</b>; zero velocity: <b style="color:var(--fixed)">fixed</b></td></tr>
-      </table>
+  <div class="rulegrid">
+    <div class="figure reveal"><div class="board"><svg id="storySvg" viewBox="0 0 520 520" role="img" aria-label="universe 613: matrix, drift tables, vector field and orbit"></svg><div class="cap" id="storyCap"></div></div></div>
+    <div class="rulecol">
+      <ol class="steps reveal" aria-label="from matrix to orbit, universe 613">
+        <li><button type="button" class="step" data-step="0" aria-pressed="true"><b>A universe is a matrix.</b> Each of <span class="mi">N</span> elements has a positive and a negative channel; a <span class="mi">2N × 2N</span> matrix of bits says which feeds which.</button></li>
+        <li><button type="button" class="step" data-step="1" aria-pressed="false"><b>Only differences matter.</b> Each pair of bits collapses to −1, 0 or +1, so <span class="f">2<sup>4N²</sup> matrices → 3<sup>2N²</sup> universes</span>, 177× fewer at <span class="mi">N</span> = 3.</button></li>
+        <li><button type="button" class="step" data-step="2" aria-pressed="false"><b>Signs choose the velocity.</b> Inside a quadrant the same rows fire every step, so <span class="f"><i>d</i>(<i>s</i>) = Σ<sub>+</sub> <i>d</i><sup>+</sup><sub><i>f</i></sub> + Σ<sub>−</sub> <i>d</i><sup>−</sup><sub><i>f</i></sub></span> is constant.</button></li>
+        <li><button type="button" class="step" data-step="3" aria-pressed="false"><b>So orbits are polygons.</b> From zero every channel fires once; the state then slides straight and turns only on the axes. Universe 613 wanders 4 steps, then loops with period 10.</button></li>
+      </ol>
+      <div class="returnmap reveal d1">
+        <div class="hand">around one loop of quadrants, the return map is affine: <span class="big"><i>x</i> ↦ <i>A</i><i>x</i> + <i>b</i></span></div>
+        <table>
+          <tr><td><i>A</i> = <i>I</i>, <i>b</i> = 0</td><td>the state comes back exactly: a <b style="color:var(--cycle)">cycle</b></td></tr>
+          <tr><td><i>A</i> = <i>I</i>, <i>b</i> ≠ 0</td><td>it comes back shifted by the same vector: a <b style="color:var(--helix)">helix</b></td></tr>
+          <tr><td>ρ(<i>A</i>) &gt; 1</td><td>each return is larger, like <i>x</i> ↦ 2<i>x</i> + 13: a <b style="color:var(--spiral)">spiral</b></td></tr>
+          <tr><td>no loop at all</td><td>a quadrant it never leaves: a <b style="color:var(--ray)">ray</b>; zero velocity: <b style="color:var(--fixed)">fixed</b></td></tr>
+        </table>
+      </div>
     </div>
-    <div class="refs">
-      <div class="ref reveal d1"><b>Piecewise-constant derivatives</b><span>The continuous cousin. Reachability is decidable in two dimensions and undecidable from three, so no closed formula can predict every fate. That is why spirals stay empirical.</span><cite>Asarin, Maler, Pnueli · Theoretical Computer Science 138 (1995)</cite></div>
-      <div class="ref reveal d2"><b>Glass networks</b><span>Piecewise-linear gene-regulation models whose vector field depends only on which side of thresholds each variable lies: the same sign-decides-velocity structure, with decay.</span><cite>Glass, Kauffman (1973)</cite></div>
-      <div class="ref reveal d3"><b>Karp–Miller coverability</b><span>The helix certificate is the deterministic analogue of the coverability argument for vector addition systems: a repeated pattern with a gain that keeps every sign repeats forever.</span><cite>Karp, Miller (1969)</cite></div>
-      <div class="ref reveal d4"><b>Basins of attraction</b><span>Started away from zero, the basin maps fall into three families: sectors (55 % of two-element universes), stripes from conserved linear functionals (40 %), and parity checkerboards (1 %).</span><cite>computed by this engine</cite></div>
-    </div>
+  </div>
+  <div class="refs">
+    <div class="ref reveal d1"><b>Piecewise-constant derivatives</b><span>The continuous cousin: reachability is decidable in two dimensions and undecidable from three, which is why spirals stay empirical.</span><cite>Asarin, Maler, Pnueli (1995)</cite></div>
+    <div class="ref reveal d2"><b>Glass networks</b><span>Gene-regulation models whose vector field depends only on which side of thresholds each variable lies.</span><cite>Glass, Kauffman (1973)</cite></div>
+    <div class="ref reveal d3"><b>Karp–Miller coverability</b><span>The helix certificate is its deterministic analogue: a repeated pattern whose gain keeps every sign repeats forever.</span><cite>Karp, Miller (1969)</cite></div>
+    <div class="ref reveal d4"><b>Basins of attraction</b><span>Started away from zero, basins form sectors (55 %), stripes from conserved functionals (40 %) and parity checkerboards (1 %).</span><cite>computed by this engine</cite></div>
   </div>
 </section>
 </main>
@@ -776,7 +748,7 @@ const lcm = (a, b) => a / gcd(a, b) * b;
   document.querySelectorAll(".reveal, .hero-stats b").forEach(el => io.observe(el));
 })();
 
-// ---- §1 story: universe 613 told in four pictures ----------------------
+// ---- §6 story: universe 613 told in four pictures ----------------------
 (function story(){
   const svg = document.getElementById("storySvg"), cap = document.getElementById("storyCap");
   const U = decodeRows(613, 2);
@@ -857,9 +829,13 @@ const lcm = (a, b) => a / gcd(a, b) * b;
     }
   }
   show(0);
+  // Step through the four pictures: auto-advance while the figure is on screen, until the reader picks one.
   const steps = [...document.querySelectorAll(".step")];
-  const so = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting){ steps.forEach(s => s.classList.toggle("on", s === en.target)); show(Number(en.target.dataset.step)); } }), {rootMargin: "-45% 0px -45% 0px"});
-  steps.forEach(s => so.observe(s));
+  const select = i => { steps.forEach((b, k) => b.setAttribute("aria-pressed", String(k === i))); show(i); };
+  let auto = !REDUCED, visible = false, timer = 0;
+  const tick = () => { clearTimeout(timer); if (auto && visible) timer = setTimeout(() => { select((cur + 1) % layers.length); tick(); }, cur === 3 ? 5600 : 3400); };
+  steps.forEach((b, k) => b.addEventListener("click", () => { auto = false; clearTimeout(timer); select(k); }));
+  new IntersectionObserver(es => { visible = es[0].isIntersecting; visible ? tick() : clearTimeout(timer); }, {threshold: .4}).observe(svg);
 })();
 
 // ---- cards ------------------------------------------------------------
