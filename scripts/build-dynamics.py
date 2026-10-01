@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build docs/fates-lab.html from the exact census JSON exports (standard start)."""
+"""Build docs/index.html (Universal Dynamics) from the exact census JSON exports (standard start)."""
 import json, pathlib
 root = pathlib.Path(__file__).resolve().parent.parent
 data = {}
@@ -22,7 +22,7 @@ for d in data.values():
         keep.append(typical)
         keep.extend(rest[:8])
     d["classes"] = keep
-tmpl = open(root / "scripts/fates-lab.template.html").read()
+tmpl = open(root / "scripts/dynamics.template.html").read()
 out = tmpl.replace("__DATA__", json.dumps(data))
-open(root / "docs/fates-lab.html", "w").write(out)
-print("wrote docs/fates-lab.html", len(out), "sizes", sorted(data))
+open(root / "docs/index.html", "w").write(out)
+print("wrote docs/index.html", len(out), "sizes", sorted(data))

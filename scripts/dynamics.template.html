@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>Fate Lab</title>
+<title>Universal Dynamics</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -43,11 +43,28 @@ header p{margin:6px 0 0;color:var(--ink-2);max-width:66ch}
 .tabs{display:flex;gap:6px;border-bottom:1px solid var(--edge);margin:10px 0 22px}
 .tabs button{border-bottom:none;border-radius:6px 6px 0 0;padding:10px 18px;font-family:"Fraunces",Georgia,serif;font-size:19px;background:var(--tab);color:var(--ink-2)}
 .tabs button[aria-selected=true]{background:var(--panel);color:var(--ink);position:relative;top:1px}
+.fates{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:4px 0 22px}
+@media (max-width:980px){.fates{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}}
+.fate{margin:0;background:var(--panel);border:1px solid var(--edge);border-top:3px solid var(--c);border-radius:6px;padding:10px 12px 10px;display:flex;flex-direction:column;gap:6px}
+.fate .hd{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.fate .nm{font-family:"Fraunces",Georgia,serif;font-size:19px;font-weight:600;line-height:1;color:var(--c)}
+.fate .tg{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.fate svg{width:100%;height:auto;display:block;border-radius:3px;background:var(--paper)}
+.fate figcaption{font-size:12.5px;color:var(--ink-2);line-height:1.4}
+.ico{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.seg button{display:inline-flex;align-items:center;gap:7px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr)}
+.tabs button{display:flex;align-items:center;justify-content:center;gap:10px}
+.tabs .ico{width:22px;height:22px;stroke:none;fill:currentColor}
 .census{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin-bottom:26px}
 .stat{background:var(--panel);border:1px solid var(--edge);border-radius:6px;padding:12px 14px;border-top:3px solid var(--c)}
 .stat .k{font-family:"Fraunces",Georgia,serif;font-size:19px;color:var(--c);font-weight:600;line-height:1}
 .stat .n{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:18px;margin-top:8px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .stat .p{font-size:12.5px;color:var(--ink-3)}
+a.stat{display:block;color:inherit;text-decoration:none}
+a.stat:hover,a.stat:focus-visible{border-color:var(--c);outline:none}
+a.stat .k::after{content:" ↓";font-size:14px}
+.rowhead{scroll-margin-top:16px}
 .note{font-size:13px;color:var(--ink-3);margin:-14px 0 30px}
 h2{font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:24px;margin:0 0 4px}
 .sub{color:var(--ink-2);margin:0 0 16px;max-width:76ch}
@@ -79,15 +96,21 @@ canvas{width:100%;aspect-ratio:1/1;display:block;border-radius:4px;background:va
 .starts i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:7px;vertical-align:middle;font-style:normal}
 .starts code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;color:var(--ink)}
 @media (prefers-reduced-motion: reduce){ .hint{display:none} }
+.pages{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.pages a{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--edge);border-radius:6px;padding:9px 14px;color:var(--ink);text-decoration:none;font-family:"Fraunces",Georgia,serif;font-size:17px}
+.pages a span{font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:12.5px;color:var(--ink-3)}
+.pages a:hover,.pages a:focus-visible{border-color:var(--ink-3);outline:none}
 </style>
 <div class="wrap">
 <header>
   <div>
-    <h1>Fate Lab</h1>
-    <p>Every card is one reduced universe simulated live from the zero state: the first step fires every channel, then the state evolves on its own. Press a card's play button to run it. Portrait plots the state in the plane; Waves plots every coordinate against time (one dash pattern per coordinate, see each chart's legend); Radial wraps time around the circle, one turn per 60 steps, with the radius as the size of the state (thick: ‖v‖, thin: each |v<sub>e</sub>|).</p>
+    <h1>Universal Dynamics</h1>
+    <p>Every card is one reduced universe simulated live from the zero state: the first step fires every channel, then the state evolves on its own. Cards play while they are on screen and stop when scrolled away; a card's button pauses or resumes it. Portrait plots the state in the plane; Waves plots every coordinate against time (one dash pattern per coordinate, see each chart's legend); Radial wraps time around the circle, one turn per 60 steps, with the radius as the size of the state (thick: ‖v‖, thin: each |v<sub>e</sub>|).</p>
+    <nav class="pages"><a href="basin-atlas.html">Basin Atlas<span>where every start state ends up</span></a></nav>
   </div>
+  <div class="fates" id="fates" aria-label="the five fates"></div>
   <div class="controls">
-    <span class="seg" role="group" aria-label="view"><button id="mode-portrait" aria-pressed="true">Portrait</button><button id="mode-waves" aria-pressed="false">Waves</button><button id="mode-radial" aria-pressed="false">Radial</button></span>
+    <span class="seg" role="group" aria-label="view"><button id="mode-portrait" aria-pressed="true"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5v13M1.5 8h13" opacity=".45"/><path d="M3 12.5 6 6.5h4.5L12 10"/><circle cx="12" cy="10" r="1.2" fill="currentColor"/></svg>Portrait</button><button id="mode-waves" aria-pressed="false"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8h13" opacity=".45"/><path d="M1.5 8C3 3 5 3 6.5 8S10 13 11.5 8 13.5 4.5 14.5 6"/></svg>Waves</button><button id="mode-radial" aria-pressed="false"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" opacity=".45"/><path d="M8 8c0-1 1.6-1.4 2.2-.3.8 1.4-.4 3-2.2 3S4.7 9 5 7.2C5.4 4.8 8 3.8 10 4.6s3 3 2.6 5"/></svg>Radial</button></span>
     <button id="play">Play all</button>
     <button id="pause">Pause all</button>
     <label>speed <input id="speed" type="range" min="1" max="60" value="12" aria-label="steps per second"></label>
@@ -96,14 +119,48 @@ canvas{width:100%;aspect-ratio:1/1;display:block;border-radius:4px;background:va
   </div>
 </header>
 <div class="tabs" role="tablist">
-  <button role="tab" aria-selected="true" data-size="2">Size 2</button>
-  <button role="tab" aria-selected="false" data-size="3">Size 3</button>
-  <button role="tab" aria-selected="false" data-size="4">Size 4</button>
+  <button role="tab" aria-selected="true" data-size="2"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.10" y="3.10" width="7.80" height="7.80" rx="1.50"/><rect x="13.10" y="3.10" width="7.80" height="7.80" rx="1.50"/><rect x="3.10" y="13.10" width="7.80" height="7.80" rx="1.50"/><rect x="13.10" y="13.10" width="7.80" height="7.80" rx="1.50"/></svg>Size 2</button>
+  <button role="tab" aria-selected="false" data-size="3"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.73" y="2.73" width="5.20" height="5.20" rx="1.00"/><rect x="9.40" y="2.73" width="5.20" height="5.20" rx="1.00"/><rect x="16.07" y="2.73" width="5.20" height="5.20" rx="1.00"/><rect x="2.73" y="9.40" width="5.20" height="5.20" rx="1.00"/><rect x="9.40" y="9.40" width="5.20" height="5.20" rx="1.00"/><rect x="16.07" y="9.40" width="5.20" height="5.20" rx="1.00"/><rect x="2.73" y="16.07" width="5.20" height="5.20" rx="1.00"/><rect x="9.40" y="16.07" width="5.20" height="5.20" rx="1.00"/><rect x="16.07" y="16.07" width="5.20" height="5.20" rx="1.00"/></svg>Size 3</button>
+  <button role="tab" aria-selected="false" data-size="4"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.55" y="2.55" width="3.90" height="3.90" rx="0.75"/><rect x="7.55" y="2.55" width="3.90" height="3.90" rx="0.75"/><rect x="12.55" y="2.55" width="3.90" height="3.90" rx="0.75"/><rect x="17.55" y="2.55" width="3.90" height="3.90" rx="0.75"/><rect x="2.55" y="7.55" width="3.90" height="3.90" rx="0.75"/><rect x="7.55" y="7.55" width="3.90" height="3.90" rx="0.75"/><rect x="12.55" y="7.55" width="3.90" height="3.90" rx="0.75"/><rect x="17.55" y="7.55" width="3.90" height="3.90" rx="0.75"/><rect x="2.55" y="12.55" width="3.90" height="3.90" rx="0.75"/><rect x="7.55" y="12.55" width="3.90" height="3.90" rx="0.75"/><rect x="12.55" y="12.55" width="3.90" height="3.90" rx="0.75"/><rect x="17.55" y="12.55" width="3.90" height="3.90" rx="0.75"/><rect x="2.55" y="17.55" width="3.90" height="3.90" rx="0.75"/><rect x="7.55" y="17.55" width="3.90" height="3.90" rx="0.75"/><rect x="12.55" y="17.55" width="3.90" height="3.90" rx="0.75"/><rect x="17.55" y="17.55" width="3.90" height="3.90" rx="0.75"/></svg>Size 4</button>
 </div>
 <div id="page"></div>
 </div>
 <script>
-const DATA = {"2": {"model": "sign", "size": 2, "reduced": 6561, "matrices": 65536, "sampled": false, "fates": {"cycle": [88, 352], "fixed": [1485, 19540], "ray": [4988, 45644]}, "classes": [{"kind": "fixed", "param": 1, "count": 965, "index": 8, "pos": [[-1, -1], [-1, -1]], "neg": [[-1, -1], [1, 1]]}, {"kind": "fixed", "param": 5, "count": 8, "index": 617, "pos": [[-1, -1], [1, 0]], "neg": [[0, 1], [0, 1]]}, {"kind": "fixed", "param": 4, "count": 32, "index": 59, "pos": [[-1, -1], [-1, -1]], "neg": [[1, -1], [0, 1]]}, {"kind": "fixed", "param": 3, "count": 124, "index": 35, "pos": [[-1, -1], [-1, -1]], "neg": [[0, -1], [1, 1]]}, {"kind": "fixed", "param": 2, "count": 356, "index": 38, "pos": [[-1, -1], [-1, -1]], "neg": [[0, 0], [-1, 1]]}, {"kind": "cycle", "param": 2, "count": 64, "index": 71, "pos": [[-1, -1], [-1, -1]], "neg": [[1, 0], [1, 1]]}, {"kind": "cycle", "param": 10, "count": 8, "index": 613, "pos": [[-1, -1], [1, 0]], "neg": [[0, 1], [-1, 0]]}, {"kind": "cycle", "param": 7, "count": 8, "index": 532, "pos": [[-1, -1], [1, -1]], "neg": [[0, 1], [-1, 0]]}, {"kind": "cycle", "param": 5, "count": 8, "index": 533, "pos": [[-1, -1], [1, -1]], "neg": [[0, 1], [-1, 1]]}, {"kind": "ray", "param": 1, "count": 3516, "index": 0, "pos": [[-1, -1], [-1, -1]], "neg": [[-1, -1], [-1, -1]]}, {"kind": "ray", "param": 3, "count": 200, "index": 19, "pos": [[-1, -1], [-1, -1]], "neg": [[-1, 1], [-1, 0]]}, {"kind": "ray", "param": 2, "count": 1272, "index": 11, "pos": [[-1, -1], [-1, -1]], "neg": [[-1, 0], [-1, 1]]}]}, "3": {"model": "sign", "size": 3, "reduced": 387420489, "matrices": 68719476736, "sampled": false, "fates": {"cycle": [3684504, 362676240], "fixed": [27800807, 7345459384], "helix": [5025024, 420144840], "ray": [350630026, 60545608896], "spiral": [280128, 45587376]}, "classes": [{"kind": "fixed", "param": 1, "count": 12961313, "index": 377, "pos": [[-1, -1, -1], [-1, -1, -1], [-1, -1, -1]], "neg": [[-1, -1, -1], [0, 0, 0], [1, 1, 1]]}, {"kind": "fixed", "param": 314, "count": 48, "index": 10082944, "pos": [[-1, -1, -1], [1, -1, -1], [1, 1, 1]], "neg": [[-1, 1, 0], [-1, 0, 1], [0, -1, 0]]}, {"kind": "fixed", "param": 301, "count": 48, "index": 12156892, "pos": [[-1, -1, -1], [1, 0, 0], [1, 0, 1]], "neg": [[0, 1, 1], [-1, 0, -1], [-1, 1, 0]]}, {"kind": "fixed", "param": 240, "count": 48, "index": 11684444, "pos": [[-1, -1, -1], [1, 0, -1], [1, 1, 1]], "neg": [[0, 1, 1], [-1, -1, 0], [-1, 0, 1]]}, {"kind": "fixed", "param": 157, "count": 48, "index": 10082866, "pos": [[-1, -1, -1], [1, -1, -1], [1, 1, 1]], "neg": [[-1, 1, 0], [-1, -1, 1], [0, 0, 0]]}, {"kind": "fixed", "param": 135, "count": 48, "index": 12196228, "pos": [[-1, -1, -1], [1, 0, 0], [1, 1, 0]], "neg": [[0, 1, 1], [-1, -1, 1], [-1, 0, 0]]}, {"kind": "fixed", "param": 100, "count": 48, "index": 10070437, "pos": [[-1, -1, -1], [1, -1, -1], [1, 1, 0]], "neg": [[0, 1, 1], [-1, -1, 0], [-1, 0, 0]]}, {"kind": "fixed", "param": 88, "count": 48, "index": 3070151, "pos": [[-1, -1, -1], [-1, 0, 1], [1, -1, 1]], "neg": [[1, 1, 1], [0, 0, -1], [-1, 1, 1]]}, {"kind": "fixed", "param": 84, "count": 48, "index": 11682685, "pos": [[-1, -1, -1], [1, 0, -1], [1, 1, 1]], "neg": [[0, 0, 1], [0, 1, 1], [-1, -1, 0]]}, {"kind": "cycle", "param": 4, "count": 1085184, "index": 7712, "pos": [[-1, -1, -1], [-1, -1, -1], [-1, -1, -1]], "neg": [[0, -1, 0], [0, 1, -1], [0, 1, 1]]}, {"kind": "cycle", "param": 1510, "count": 48, "index": 7894996, "pos": [[-1, -1, -1], [0, 0, 1], [1, 0, 1]], "neg": [[-1, -1, 1], [1, 1, -1], [-1, 1, 0]]}, {"kind": "cycle", "param": 367, "count": 48, "index": 8456554, "pos": [[-1, -1, -1], [0, 1, -1], [1, 1, -1]], "neg": [[0, 1, 1], [-1, 0, 1], [1, -1, 0]]}, {"kind": "cycle", "param": 351, "count": 48, "index": 8494463, "pos": [[-1, -1, -1], [0, 1, -1], [1, 1, 1]], "neg": [[0, 1, -1], [-1, 0, 1], [1, -1, 1]]}, {"kind": "cycle", "param": 320, "count": 48, "index": 6249562, "pos": [[-1, -1, -1], [0, -1, 1], [1, -1, 1]], "neg": [[0, 0, 0], [1, 0, -1], [-1, 1, 0]]}, {"kind": "cycle", "param": 286, "count": 48, "index": 3061483, "pos": [[-1, -1, -1], [-1, 0, 1], [1, -1, 1]], "neg": [[0, 0, 1], [0, 1, -1], [-1, 1, 0]]}, {"kind": "cycle", "param": 270, "count": 48, "index": 2587067, "pos": [[-1, -1, -1], [-1, 0, 0], [1, 0, 1]], "neg": [[0, -1, 1], [1, 0, -1], [-1, 1, 1]]}, {"kind": "cycle", "param": 256, "count": 48, "index": 2530042, "pos": [[-1, -1, -1], [-1, 0, 0], [1, -1, 1]], "neg": [[0, 0, 1], [0, 1, -1], [-1, 1, 0]]}, {"kind": "cycle", "param": 233, "count": 48, "index": 11683112, "pos": [[-1, -1, -1], [1, 0, -1], [1, 1, 1]], "neg": [[0, 1, -1], [-1, 0, 1], [1, 0, 1]]}, {"kind": "ray", "param": 1, "count": 191790874, "index": 0, "pos": [[-1, -1, -1], [-1, -1, -1], [-1, -1, -1]], "neg": [[-1, -1, -1], [-1, -1, -1], [-1, -1, -1]]}, {"kind": "ray", "param": 668, "count": 48, "index": 13219822, "pos": [[-1, -1, -1], [1, 1, -1], [1, 0, 1]], "neg": [[0, 1, 1], [-1, 0, 1], [-1, -1, 0]]}, {"kind": "ray", "param": 570, "count": 48, "index": 11678153, "pos": [[-1, -1, -1], [1, 0, -1], [1, 1, 1]], "neg": [[-1, 1, 1], [0, -1, 1], [-1, 0, 1]]}, {"kind": "ray", "param": 393, "count": 48, "index": 10082857, "pos": [[-1, -1, -1], [1, -1, -1], [1, 1, 1]], "neg": [[-1, 1, 0], [-1, -1, 1], [-1, 0, 0]]}, {"kind": "ray", "param": 313, "count": 48, "index": 11684470, "pos": [[-1, -1, -1], [1, 0, -1], [1, 1, 1]], "neg": [[0, 1, 1], [-1, -1, 1], [-1, 0, 0]]}, {"kind": "ray", "param": 282, "count": 48, "index": 137577016, "pos": [[0, -1, -1], [0, 1, -1], [1, 0, 1]], "neg": [[0, 1, 1], [-1, 0, 1], [-1, -1, 0]]}, {"kind": "ray", "param": 251, "count": 48, "index": 136041664, "pos": [[0, -1, -1], [0, 0, -1], [1, 1, 1]], "neg": [[0, 1, 1], [-1, -1, 1], [-1, 0, 0]]}, {"kind": "ray", "param": 243, "count": 48, "index": 27601471, "pos": [[-1, -1, 0], [1, 1, -1], [1, 1, 0]], "neg": [[-1, 1, 1], [-1, -1, 1], [1, -1, 0]]}, {"kind": "ray", "param": 173, "count": 48, "index": 11618218, "pos": [[-1, -1, -1], [1, 0, -1], [1, 0, 1]], "neg": [[-1, 1, 0], [-1, 0, 1], [0, -1, 0]]}, {"kind": "helix", "param": 4, "count": 3470784, "index": 899, "pos": [[-1, -1, -1], [-1, -1, -1], [-1, -1, -1]], "neg": [[-1, -1, 0], [-1, 1, -1], [-1, 1, 1]]}, {"kind": "helix", "param": 6, "count": 47856, "index": 140914, "pos": [[-1, -1, -1], [-1, -1, -1], [-1, 1, 0]], "neg": [[-1, 0, 0], [-1, 1, 1], [-1, -1, 0]]}, {"kind": "helix", "param": 5, "count": 98400, "index": 121151, "pos": [[-1, -1, -1], [-1, -1, -1], [-1, 1, -1]], "neg": [[-1, 0, 0], [-1, 0, 1], [-1, -1, 1]]}, {"kind": "helix", "param": 10, "count": 101232, "index": 140833, "pos": [[-1, -1, -1], [-1, -1, -1], [-1, 1, 0]], "neg": [[-1, 0, 0], [-1, 0, 1], [-1, -1, 0]]}, {"kind": "helix", "param": 7, "count": 102000, "index": 121150, "pos": [[-1, -1, -1], [-1, -1, -1], [-1, 1, -1]], "neg": [[-1, 0, 0], [-1, 0, 1], [-1, -1, 0]]}, {"kind": "helix", "param": 2, "count": 1204752, "index": 224, "pos": [[-1, -1, -1], [-1, -1, -1], [-1, -1, -1]], "neg": [[-1, -1, -1], [-1, 1, 1], [-1, 1, 1]]}, {"kind": "spiral", "param": 0, "count": 280128, "index": 116065, "pos": [[-1, -1, -1], [-1, -1, -1], [-1, 0, 1]], "neg": [[1, 1, -1], [-1, 0, 1], [1, -1, 0]]}]}, "4": {"model": "sign", "size": 4, "reduced": 2000000000, "matrices": 19911775336430, "sampled": true, "fates": {"cycle": [6320238, 45171972590], "fixed": [34801439, 601712869265], "helix": [54906163, 274921688119], "ray": [1901223776, 18965678894920], "spiral": [2740432, 24271001224], "undecided": [7952, 18910312]}, "classes": [{"kind": "fixed", "param": 1, "count": 11520368, "index": 195290404, "pos": [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, 0, 0]], "neg": [[0, 0, 1, 0], [0, 0, -1, 1], [0, -1, -1, -1], [0, 1, 1, 0]]}, {"kind": "fixed", "param": 805437199, "count": 1, "index": 1337051325212753, "pos": [[1, -1, 0, 0], [0, 0, -1, -1], [-1, -1, 1, 1], [0, 1, -1, 0]], "neg": [[0, 1, -1, 1], [-1, 0, 1, 0], [1, -1, 0, -1], [-1, -1, 0, 1]]}, {"kind": "fixed", "param": 9577357, "count": 1, "index": 578857480529394, "pos": [[-1, 1, 1, 0], [-1, 1, 1, -1], [0, 1, -1, -1], [1, -1, 0, -1]], "neg": [[-1, -1, -1, 1], [0, 0, -1, 1], [1, 1, 1, 1], [-1, -1, 0, -1]]}, {"kind": "fixed", "param": 2931851, "count": 1, "index": 355307970262034, "pos": [[-1, 0, 1, -1], [0, 0, 1, 0], [-1, -1, 0, -1], [-1, 1, 1, 1]], "neg": [[1, 0, -1, -1], [0, 1, 0, -1], [1, 0, -1, 1], [-1, 0, -1, 1]]}, {"kind": "fixed", "param": 684615, "count": 1, "index": 440958677237145, "pos": [[-1, 1, -1, 0], [-1, 1, 0, 0], [-1, 1, 1, -1], [1, -1, 0, -1]], "neg": [[1, 0, -1, 0], [0, 0, 1, 1], [-1, -1, 1, 1], [0, -1, -1, -1]]}, {"kind": "fixed", "param": 524837, "count": 1, "index": 682157878635043, "pos": [[0, -1, -1, 1], [1, 0, 0, -1], [-1, 1, 1, 0], [1, 1, 1, -1]], "neg": [[0, 0, 0, -1], [-1, -1, 1, 1], [-1, -1, 0, 1], [1, 1, -1, 0]]}, {"kind": "fixed", "param": 511612, "count": 1, "index": 577282916653253, "pos": [[-1, 1, 1, 0], [-1, 1, -1, -1], [1, 1, 1, 1], [-1, 0, -1, 0]], "neg": [[-1, -1, -1, -1], [1, -1, 1, 0], [0, 0, -1, 0], [1, -1, 1, 1]]}, {"kind": "fixed", "param": 296264, "count": 1, "index": 91872918547296, "pos": [[-1, -1, 0, 0], [-1, -1, -1, 0], [-1, 1, 0, 1], [1, 1, -1, -1]], "neg": [[0, 0, 1, 1], [1, -1, 1, 0], [0, -1, -1, -1], [-1, 1, 1, -1]]}, {"kind": "fixed", "param": 284617, "count": 1, "index": 1297835273922768, "pos": [[1, -1, -1, 1], [1, -1, 0, 1], [-1, 1, -1, 1], [0, 0, 1, -1]], "neg": [[-1, 1, -1, 0], [-1, -1, 1, -1], [1, 0, 0, 1], [-1, 1, -1, -1]]}, {"kind": "cycle", "param": 4, "count": 1638588, "index": 672728897, "pos": [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1], [-1, 0, 1, -1]], "neg": [[0, 1, 0, 1], [1, 0, 1, -1], [0, 0, 0, 1], [-1, -1, -1, 1]]}, {"kind": "cycle", "param": 989403630, "count": 1, "index": 345302372823031, "pos": [[-1, 0, 1, -1], [-1, -1, 1, 0], [0, 1, 0, 0], [1, -1, 1, 0]], "neg": [[-1, -1, -1, 0], [1, 0, -1, 0], [1, 1, 0, 1], [0, 0, -1, 0]]}, {"kind": "cycle", "param": 6810070, "count": 1, "index": 1817169273236146, "pos": [[1, 1, 1, 0], [0, -1, 1, 1], [-1, -1, 0, 1], [-1, -1, 0, 0]], "neg": [[1, -1, -1, 0], [0, -1, -1, -1], [-1, 1, 1, 0], [1, 1, 0, 0]]}, {"kind": "cycle", "param": 4662126, "count": 1, "index": 1075292232565407, "pos": [[0, 1, -1, 1], [-1, -1, -1, -1], [-1, 1, 0, 1], [1, 0, -1, 0]], "neg": [[1, 0, 0, 1], [-1, -1, -1, 0], [1, 1, 1, -1], [-1, -1, 1, -1]]}, {"kind": "cycle", "param": 1597022, "count": 1, "index": 1395215547262919, "pos": [[1, -1, 1, -1], [1, 1, 1, 1], [-1, -1, 0, -1], [1, 1, -1, 0]], "neg": [[1, 0, -1, 0], [0, 0, 0, 1], [-1, 1, 0, -1], [-1, 0, 1, 1]]}, {"kind": "cycle", "param": 630370, "count": 1, "index": 449639676293348, "pos": [[-1, 1, -1, 0], [0, 1, 1, 1], [-1, -1, 0, -1], [0, -1, 0, 1]], "neg": [[0, -1, 0, -1], [1, 0, -1, 0], [0, 1, 1, -1], [1, -1, -1, 1]]}, {"kind": "cycle", "param": 353676, "count": 1, "index": 1214464514321451, "pos": [[0, 1, 1, 1], [-1, -1, 1, 0], [-1, -1, 0, 1], [-1, -1, -1, 0]], "neg": [[1, -1, 0, -1], [0, -1, -1, 1], [-1, 1, 1, -1], [1, 1, 0, -1]]}, {"kind": "cycle", "param": 345476, "count": 1, "index": 96843029540708, "pos": [[-1, -1, 0, 0], [-1, 1, -1, -1], [1, 1, -1, -1], [-1, 1, 1, 0]], "neg": [[-1, -1, 1, -1], [0, -1, 1, 1], [-1, 0, 0, -1], [1, -1, -1, 1]]}, {"kind": "cycle", "param": 319215, "count": 1, "index": 1190223880583631, "pos": [[0, 1, 1, 0], [-1, -1, -1, 1], [-1, 1, -1, -1], [1, 0, 1, 0]], "neg": [[1, 1, -1, -1], [0, -1, 0, -1], [0, -1, -1, 1], [1, 1, 1, -1]]}, {"kind": "ray", "param": 1, "count": 781580895, "index": 4266903, "pos": [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]], "neg": [[-1, -1, 1, 1], [-1, -1, -1, 1], [0, -1, -1, -1], [1, 0, 0, -1]]}, {"kind": "ray", "param": 1092831065384, "count": 1, "index": 1080764054122576, "pos": [[0, 1, -1, 1], [-1, 1, -1, 0], [1, -1, -1, -1], [-1, -1, 1, 1]], "neg": [[0, -1, 0, 0], [0, 1, 1, -1], [1, 0, 0, 1], [1, -1, 0, 0]]}, {"kind": "ray", "param": 940239758813, "count": 1, "index": 5271744373124, "pos": [[-1, -1, -1, -1], [-1, 1, -1, -1], [0, 1, 1, 1], [1, 1, -1, 1]], "neg": [[0, 1, 1, 0], [-1, -1, 1, 0], [1, -1, 1, 0], [1, -1, 0, 1]]}, {"kind": "ray", "param": 150226334631, "count": 1, "index": 219724739668513, "pos": [[-1, 0, -1, -1], [0, 1, 0, -1], [1, 1, 1, 0], [0, -1, 1, 1]], "neg": [[0, 1, 1, -1], [-1, 0, 1, 1], [1, -1, 0, 1], [1, -1, -1, 0]]}, {"kind": "ray", "param": 107367272802, "count": 1, "index": 1711041993510523, "pos": [[1, 1, -1, 1], [1, 0, -1, 0], [-1, 1, 1, -1], [-1, -1, 0, 0]], "neg": [[-1, 0, 0, -1], [-1, 1, -1, -1], [-1, -1, 1, 1], [1, 1, 1, 0]]}, {"kind": "ray", "param": 95392535787, "count": 1, "index": 621263924872191, "pos": [[0, -1, -1, -1], [-1, 0, 0, -1], [1, -1, 0, -1], [1, -1, 1, 0]], "neg": [[-1, -1, -1, 1], [1, 1, 1, 1], [-1, 1, 0, 1], [-1, 0, -1, -1]]}, {"kind": "ray", "param": 44453474795, "count": 1, "index": 1720863685556135, "pos": [[1, 1, 0, -1], [-1, 1, -1, -1], [-1, -1, 0, 1], [1, 0, 1, 1]], "neg": [[1, -1, -1, 0], [0, 1, -1, 1], [-1, -1, 1, 0], [-1, 0, 1, 1]]}, {"kind": "ray", "param": 20108269472, "count": 1, "index": 668442353066435, "pos": [[0, -1, -1, 1], [-1, 0, 1, 1], [1, -1, 1, 0], [0, -1, 0, 0]], "neg": [[1, 1, 1, -1], [-1, -1, -1, -1], [0, 0, 0, -1], [-1, 1, -1, 1]]}, {"kind": "ray", "param": 4372229025, "count": 1, "index": 1506155091541291, "pos": [[1, 0, -1, 1], [1, 0, 0, 0], [1, 0, 1, -1], [-1, -1, 0, 0]], "neg": [[1, 1, 1, 1], [0, -1, 0, -1], [-1, 1, 0, 1], [1, 1, -1, 0]]}, {"kind": "helix", "param": 4, "count": 30841612, "index": 1706393, "pos": [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]], "neg": [[-1, -1, 0, -1], [-1, 0, 1, 1], [-1, -1, 1, -1], [0, 1, -1, 1]]}, {"kind": "helix", "param": 3274, "count": 1, "index": 813233526385765, "pos": [[0, -1, 1, 1], [0, 0, 1, 1], [0, -1, 1, 0], [-1, -1, 1, 0]], "neg": [[1, 1, -1, 0], [-1, 0, -1, -1], [1, 1, -1, 1], [0, 1, 0, 0]]}, {"kind": "helix", "param": 1662, "count": 1, "index": 1739624982502337, "pos": [[1, 1, 0, 0], [-1, -1, 0, -1], [0, 0, 0, 0], [0, 1, -1, 0]], "neg": [[0, -1, -1, 1], [1, -1, 0, -1], [1, -1, 1, -1], [-1, 1, 1, 1]]}, {"kind": "helix", "param": 1192, "count": 1, "index": 1220281245742786, "pos": [[0, 1, 1, 1], [0, -1, -1, -1], [0, 1, 1, 1], [-1, 1, -1, 0]], "neg": [[1, -1, 0, -1], [1, -1, 0, 1], [1, -1, 0, -1], [1, -1, 1, 0]]}, {"kind": "helix", "param": 1139, "count": 1, "index": 948298895550604, "pos": [[0, 0, 0, 1], [0, 0, -1, -1], [0, 1, 1, 0], [0, 0, -1, 0]], "neg": [[1, 0, 0, 0], [1, 0, 1, 0], [-1, -1, 1, -1], [1, -1, -1, 0]]}, {"kind": "helix", "param": 630, "count": 1, "index": 1095325223658102, "pos": [[0, 1, -1, 1], [1, 0, 1, 1], [-1, 1, -1, -1], [-1, 0, 1, 0]], "neg": [[1, -1, 0, -1], [-1, -1, 0, -1], [1, 1, 0, 0], [1, -1, -1, -1]]}, {"kind": "helix", "param": 541, "count": 1, "index": 991058348030726, "pos": [[0, 0, 1, 0], [-1, 1, 1, 1], [-1, -1, 0, -1], [1, -1, 1, 0]], "neg": [[0, -1, 1, 0], [0, 0, -1, 0], [0, 1, 0, -1], [1, 1, -1, 1]]}, {"kind": "helix", "param": 466, "count": 1, "index": 537512654814451, "pos": [[-1, 1, 0, 1], [0, 0, 0, 0], [-1, 0, 0, 1], [-1, 0, -1, 0]], "neg": [[-1, -1, -1, 1], [1, -1, 0, -1], [1, 0, 0, -1], [1, 1, 1, 0]]}, {"kind": "helix", "param": 430, "count": 1, "index": 626096647796745, "pos": [[0, -1, -1, -1], [0, -1, -1, 1], [1, 0, 0, -1], [1, -1, 1, 0]], "neg": [[1, 1, 0, 1], [1, 0, -1, -1], [-1, -1, -1, 0], [-1, 1, 0, -1]]}, {"kind": "spiral", "param": 0, "count": 2740432, "index": 2726150443, "pos": [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1], [1, 0, -1, -1]], "neg": [[-1, 1, 1, 1], [1, -1, 0, 1], [0, -1, 0, -1], [-1, 1, 1, 0]]}, {"kind": "undecided", "param": 0, "count": 7952, "index": 774394476804, "pos": [[-1, -1, -1, -1], [-1, -1, -1, 1], [1, -1, 1, -1], [-1, -1, 1, 0]], "neg": [[0, 1, 0, 1], [1, 0, 0, 0], [-1, 0, 0, 0], [0, 1, -1, -1]]}]}};
+
+// ---- the five fates: one compact portrait each ----
+const FATE_PATHS = {"fixed": {"fate": "Fixed { step: 6 }", "steps": [1, 4, 6], "pts": [[5, 3], [2, 0], [0, 0]], "axes": [0, 1]}, "cycle": {"fate": "Cycle { transient: 6, period: 10 }", "steps": [1, 2, 3, 4, 6, 7, 8, 9, 10, 12, 13, 16], "pts": [[-1, 0], [-1, 1], [0, 2], [1, 2], [1, 0], [0, -1], [-1, -1], [-2, 0], [-2, 1], [0, 3], [1, 3], [1, 0]], "axes": [0, 1]}, "ray": {"fate": "Ray { step: 1 }", "steps": [1], "pts": [[1, 2]], "axes": [0, 1]}, "helix": {"fate": "Helix { step: 3, period: 2, shift_norm: 4 }", "steps": [1, 3, 4, 5], "pts": [[-2, -6], [0, -12], [1, -13], [0, -16]], "axes": [0, 1]}, "spiral": {"fate": "Undecided { events: 40, max_norm: 21 }", "steps": [1, 2, 3, 4, 6, 7, 10, 11, 15, 16, 21, 22, 28, 29, 36, 37, 45, 46, 55, 56, 66, 67, 78, 79, 91, 92, 105, 106, 120, 121, 136, 137, 153, 154, 171, 172, 190, 191, 210, 211], "pts": [[1, 0], [1, 1], [0, 2], [-1, 2], [-3, 0], [-3, -1], [0, -4], [1, -4], [5, 0], [5, 1], [0, 6], [-1, 6], [-7, 0], [-7, -1], [0, -8], [1, -8], [9, 0], [9, 1], [0, 10], [-1, 10], [-11, 0], [-11, -1], [0, -12], [1, -12], [13, 0], [13, 1], [0, 14], [-1, 14], [-15, 0], [-15, -1], [0, -16], [1, -16], [17, 0], [17, 1], [0, 18], [-1, 18], [-19, 0], [-19, -1], [0, -20], [1, -20]], "axes": [0, 1]}, "spiral2": {"fate": "Undecided { events: 52, max_norm: 468 }", "steps": [1, 2, 3, 5, 6, 7, 11, 12, 13, 14, 15, 21, 22, 40, 41, 42, 61, 62, 63, 64, 65, 86, 87, 135, 136, 137, 186, 187, 188, 189, 190, 241, 242, 350, 351, 352, 461, 462, 463, 464, 465, 576, 577, 805, 806, 807, 1036, 1037, 1038, 1039, 1040, 1271], "pts": [[1, -1], [2, -1], [2, -2], [0, -4], [-2, -4], [-3, -4], [-3, 0], [-2, 1], [0, 1], [2, 1], [5, 0], [17, 0], [18, -1], [0, -19], [-2, -19], [-3, -19], [-3, 0], [-2, 1], [0, 1], [2, 1], [5, 0], [47, 0], [48, -1], [0, -49], [-2, -49], [-3, -49], [-3, 0], [-2, 1], [0, 1], [2, 1], [5, 0], [107, 0], [108, -1], [0, -109], [-2, -109], [-3, -109], [-3, 0], [-2, 1], [0, 1], [2, 1], [5, 0], [227, 0], [228, -1], [0, -229], [-2, -229], [-3, -229], [-3, 0], [-2, 1], [0, 1], [2, 1], [5, 0], [467, 0]], "axes": [1, 2]}};
+(function(){
+  const P = [
+    {k:"fixed", tag:"proof", cap:"Stops. Universe 1040 (size 2) settles at the origin after 6 steps."},
+    {k:"cycle", tag:"proof", cap:"Repeats. Universe 613 loops with period 10 after a 6-step transient."},
+    {k:"ray", tag:"proof", cap:"Escapes in a straight line: universe 5520 never leaves the (+,+) quadrant."},
+    {k:"helix", tag:"proof", cap:"Escapes while repeating: universe 560 (size 3) replays one segment shifted by (0, −4)."},
+    {k:"spiral", tag:"empirical", cap:"Winds outward: universe 3760 makes each turn one step wider than the last."},
+  ];
+  function svg(k){
+    const d = FATE_PATHS[k], col = `var(--${k})`;
+    let pts = d.pts.map(q => q.slice()), dashedFrom = null, cycleFrom = null;
+    if (k === "ray"){ pts = [[1,2],[9,10]]; dashedFrom = 0; }
+    if (k === "helix"){ const last = pts.length, seg = pts.slice(1); for (let r = 1; r <= 3; r++) seg.forEach((q,i) => { if (i > 0) pts.push([q[0], q[1]-4*r]); }); dashedFrom = last-1; }
+    if (k === "cycle") cycleFrom = 4;
+    const xs = pts.map(q=>q[0]), ys = pts.map(q=>q[1]);
+    let x0=Math.min(0,...xs), x1=Math.max(0,...xs), y0=Math.min(0,...ys), y1=Math.max(0,...ys);
+    const pad = Math.max(1, Math.ceil(Math.max(x1-x0, y1-y0, 4)*0.12)); x0-=pad; x1+=pad; y0-=pad; y1+=pad;
+    const w = x1-x0, h = y1-y0, side = Math.max(w,h); x0 -= (side-w)/2; x1 += (side-w)/2; y0 -= (side-h)/2; y1 += (side-h)/2;
+    const W = 200, m = 4, sx = v => m + (v-x0)/(x1-x0)*(W-2*m), sy = v => W - m - (v-y0)/(y1-y0)*(W-2*m);
+    let g = `<line x1="${sx(0)}" y1="${m}" x2="${sx(0)}" y2="${W-m}" stroke="var(--axis)" stroke-width="1"/><line x1="${m}" y1="${sy(0)}" x2="${W-m}" y2="${sy(0)}" stroke="var(--axis)" stroke-width="1"/>`;
+    for (let i = 0; i < pts.length-1; i++){
+      const a = pts[i], b = pts[i+1], trans = cycleFrom !== null && i < cycleFrom, dash = dashedFrom !== null && i >= dashedFrom;
+      g += `<line x1="${sx(a[0])}" y1="${sy(a[1])}" x2="${sx(b[0])}" y2="${sy(b[1])}" stroke="${trans ? "var(--ink-3)" : col}" stroke-width="${trans ? 1.3 : 2}" stroke-linecap="round" ${dash ? 'stroke-dasharray="4 4"' : ""}/>`;
+    }
+    const s0 = d.pts[0];
+    g += `<circle cx="${sx(s0[0])}" cy="${sy(s0[1])}" r="4" fill="var(--start)" stroke="var(--panel)" stroke-width="1.5"/>`;
+    if (k === "fixed") g += `<rect x="${sx(0)-4}" y="${sy(0)-4}" width="8" height="8" fill="var(--ink)"/>`;
+    return `<svg viewBox="0 0 ${W} ${W}" role="img" aria-label="${k} trajectory">${g}</svg>`;
+  }
+  document.getElementById("fates").innerHTML = P.map(p => `<figure class="fate" style="--c:var(--${p.k})"><div class="hd"><span class="nm">${p.k}</span><span class="tg">${p.tag}</span></div>${svg(p.k)}<figcaption>${p.cap}</figcaption></figure>`).join("");
+})();
+const DATA = __DATA__;
 const COLORS = {fixed:"--fixed", cycle:"--cycle", ray:"--ray", helix:"--helix", spiral:"--spiral"};
 const ORDER = ["fixed","cycle","ray","helix","spiral"];
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -150,6 +207,38 @@ function pickAxes(u, starts){
   const idx = [...Array(N).keys()].sort((a,b)=>range[b]-range[a]).slice(0,2).sort();
   return idx;
 }
+// Steps worth showing: stop once the fate is settled instead of running on forever.
+// fixed: when the state stops; cycle: after two laps; ray: shortly after the absorbing orthant;
+// helix: after two shifted repeats of the segment; spiral: the cap.
+function fateEnd(cl, size, cap){
+  const r = makeRun(cl, new Array(size).fill(0), cl.kind), seen = new Map(), path = [r.v.slice()];
+  const sgn = v => v.map(Math.sign).join(",");
+  seen.set(r.v.join(","), 0);
+  for (let t = 1; t <= cap; t++){
+    stepRun(r);
+    if (r.done) return t;
+    const v = r.v.slice(); path.push(v);
+    if (cl.kind === "cycle"){
+      const k = v.join(","), f = seen.get(k);
+      if (f !== undefined) return Math.min(cap, t + (t - f));
+      seen.set(k, t);
+    } else if (cl.kind === "ray"){
+      if (t >= cl.param) return Math.min(cap, t + 15);
+    } else if (cl.kind === "helix"){
+      const T = cl.param;
+      if (T > 0 && t >= 2*T){
+        const D = v.map((x,e) => x - path[t-T][e]);
+        let ok = true;
+        for (let s = t - T + 1; s <= t && ok; s++){
+          if (sgn(path[s]) !== sgn(path[s-T])) ok = false;
+          else for (let e = 0; e < size; e++) if (path[s][e] - path[s-T][e] !== D[e]) { ok = false; break; }
+        }
+        if (ok) return Math.min(cap, t + 2*T);
+      }
+    }
+  }
+  return cap;
+}
 function classLabel(cl){
   switch (cl.kind){
     case "fixed": return `stops at step ${fmt(cl.param)}`;
@@ -172,6 +261,16 @@ function setPlaying(c, on){
   c.btn.setAttribute("aria-pressed", on);
   if (!on) drawCard(c);
 }
+// Cards play while on screen and stop when scrolled away. A card the user paused stays paused.
+const AUTOPLAY = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+const viewport = new IntersectionObserver(entries => {
+  for (const en of entries){
+    const c = en.target._card; if (!c) continue;
+    c.visible = en.isIntersecting;
+    if (!c.visible) { if (c.playing) setPlaying(c, false); }
+    else if (AUTOPLAY && !c.userPaused && !c.playing) setPlaying(c, true);
+  }
+}, {threshold: 0.25});
 function buildCard(cl, size, total, tag){
   const el = document.createElement("div"); el.className = "card";
   const pct = 100*cl.count/total;
@@ -185,13 +284,14 @@ function buildCard(cl, size, total, tag){
     <div class="stage"><canvas width="600" height="600" role="img" aria-label="${cl.kind} trajectory"></canvas>
       <button class="playbtn" aria-label="Play" title="Play / pause this universe" aria-pressed="false">${ICON.play}</button></div>
     <div class="meta"><span>universe ${cl.index}</span><span>axes (v${axes[0]}, v${axes[1]})${size>2?` of ${size}`:""}</span></div>`;
-  const maxSteps = Math.min(3200, Math.max(420, 2*cl.param + 80));
-  const c = {el, set: cl, axes, canvas: el.querySelector("canvas"), runs: [], t: 0, view: null, playing: false, maxSteps};
+  const maxSteps = fateEnd(cl, size, Math.min(3200, Math.max(420, 2*cl.param + 80)));
+  const c = {el, set: cl, axes, canvas: el.querySelector("canvas"), runs: [], t: 0, view: null, playing: false, maxSteps, visible: false, userPaused: false};
   c.set.starts = [{start: new Array(size).fill(0), kind: cl.kind}];
   c.btn = el.querySelector(".playbtn");
-  c.btn.addEventListener("click", () => setPlaying(c, !c.playing));
+  c.btn.addEventListener("click", () => { c.userPaused = c.playing; setPlaying(c, !c.playing); });
   resetCard(c);
   cards.push(c);
+  el._card = c; viewport.observe(el);
   return el;
 }
 function resetCard(c){
@@ -352,6 +452,7 @@ const DESC = {
   spiral: "one class: returns with growing norm (empirical)",
 };
 function renderSize(size){
+  cards.forEach(c => viewport.unobserve(c.el));
   cards.length = 0;
   const d = DATA[size];
   const page = document.getElementById("page");
@@ -363,7 +464,8 @@ function renderSize(size){
     <p class="sub">${d.sampled
       ? `Exact fates of ${fmt(total)} reduced size-${size} universes drawn uniformly at random from all ${universe} (exhaustive enumeration would take about a year at 59 million universes per second). Percentages are estimates with 95 % half-widths below 0.002 %.`
       : `Exact fates of all ${fmt(total)} reduced size-${size} universes`}, each started at the zero state with every channel firing once.${size !== "2" ? " Spirals are the empirical class; everything else is proven." : ""}</p>
-    <div class="census">${ORDER.map(k=>`<div class="stat" style="--c:var(${COLORS[k]})"><div class="k">${k}</div><div class="n">${fmt((d.fates[k]||[0])[0])}</div><div class="p">${(100*(d.fates[k]||[0])[0]/total).toFixed(3)}% · ${d.sampled ? "estimate" : "exact"}</div></div>`).join("")}</div>
+    <div class="census">${ORDER.map(k=>{ const has = d.classes.some(c => c.kind === k), tag = has ? "a" : "div";
+      return `<${tag} class="stat" ${has ? `href="#fate-${k}" title="jump to the ${k} universes"` : ""} style="--c:var(${COLORS[k]})"><div class="k">${k}</div><div class="n">${fmt((d.fates[k]||[0])[0])}</div><div class="p">${(100*(d.fates[k]||[0])[0]/total).toFixed(3)}% · ${d.sampled ? "estimate" : "exact"}</div></${tag}>`; }).join("")}</div>
     <h2>Typical and rarest universes</h2>
     <p class="sub">Within each fate the census also records a finer class (period, or the step at which the certificate arrived). The first card shows the most common class, the highlighted cards the rarest ones; the count is how many ${d.sampled ? "sampled " : ""}universes fall in that class, and the universe shown is the one with the smallest index.</p>
     <div class="grid" id="grid"></div>`;
@@ -372,7 +474,7 @@ function renderSize(size){
   for (const kind of ORDER){
     const cls = d.classes.filter(c => c.kind === kind);
     if (!cls.length) continue;
-    const head = document.createElement("div"); head.className = "rowhead"; head.style.setProperty("--c", `var(${COLORS[kind]})`);
+    const head = document.createElement("div"); head.className = "rowhead"; head.id = `fate-${kind}`; head.style.setProperty("--c", `var(${COLORS[kind]})`);
     head.innerHTML = `<span class="name">${kind}</span><span class="desc">${cls.length} class${cls.length>1?"es":""} · ${DESC[kind]}</span>`;
     grid.appendChild(head);
     const byCount = cls.slice().sort((a,b)=>b.count-a.count);
@@ -393,8 +495,8 @@ renderSize("2");
 let acc = 0, last = performance.now();
 const speed = document.getElementById("speed"), spd = document.getElementById("spd"), play = document.getElementById("play");
 speed.addEventListener("input", ()=> spd.textContent = speed.value + " steps/s");
-play.addEventListener("click", ()=>{ cards.forEach(c=>setPlaying(c,true)); });
-document.getElementById("pause").addEventListener("click", ()=>{ cards.forEach(c=>setPlaying(c,false)); });
+play.addEventListener("click", ()=>{ cards.forEach(c=>{ c.userPaused = false; if (c.visible) setPlaying(c,true); }); });
+document.getElementById("pause").addEventListener("click", ()=>{ cards.forEach(c=>{ c.userPaused = true; setPlaying(c,false); }); });
 document.getElementById("restart").addEventListener("click", ()=>{ cards.forEach(c=>{ resetCard(c); drawCard(c); }); });
 for (const m of ["portrait","waves","radial"]) document.getElementById("mode-"+m).addEventListener("click", ()=>{
   MODE = m;
@@ -405,8 +507,8 @@ function frame(now){
   const dt = (now-last)/1000; last = now;
   acc += dt * Number(speed.value);
   const live = cards.filter(c=>c.playing);
-  document.getElementById("pause").disabled = live.length === 0;
-  play.disabled = cards.length > 0 && live.length === cards.length;
+  document.getElementById("pause").disabled = cards.every(c => c.userPaused);
+  play.disabled = AUTOPLAY && !cards.some(c => c.userPaused);
   if (live.length){
     while (acc >= 1){ live.forEach(tickCard); acc -= 1; }
     for (const c of live){ try { drawCard(c); } catch (err) { console.error("draw failed", c.set.kind, c.set.param, err); setPlaying(c, false); } }

@@ -39,20 +39,15 @@ code,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.92em}
 
 /* map with axis labels */
 .map{position:relative;display:grid;grid-template-columns:30px 1fr;grid-template-rows:1fr 22px;gap:0}
-.map canvas{grid-column:2;grid-row:1;width:100%;aspect-ratio:1/1;display:block;border-radius:3px;cursor:crosshair;image-rendering:pixelated}
+.map canvas{grid-column:2;grid-row:1;width:100%;aspect-ratio:1/1;display:block;border-radius:3px;image-rendering:pixelated}
 .map .ay{grid-column:1;grid-row:1;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;padding-right:6px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;color:var(--ink-3)}
 .map .ax{grid-column:2;grid-row:2;display:flex;justify-content:space-between;padding-top:4px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;color:var(--ink-3)}
 .map .ay b,.map .ax b{color:var(--ink);font-weight:500}
-.map.small{grid-template-columns:1fr;grid-template-rows:1fr}
-.map.small canvas{grid-column:1;cursor:pointer}
-.map.small .ax,.map.small .ay{display:none}
 
 .guide-old{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;align-items:start;background:var(--panel);border:1px solid var(--edge);border-radius:8px;padding:20px}
 @media (max-width:820px){.guide{grid-template-columns:1fr}}
 .guide ol{margin:0 0 14px;padding-left:20px}
 .guide li{margin-bottom:6px}
-.readout{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px;color:var(--ink-2);min-height:3.2em;background:var(--paper);border:1px solid var(--edge);border-radius:4px;padding:8px 10px;margin-top:10px;white-space:pre-wrap;word-break:break-word}
-.readout b{color:var(--ink);font-weight:500}
 .rules{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px;border-collapse:collapse;margin-top:8px}
 .rules td{padding:2px 10px 2px 0;color:var(--ink-2);white-space:nowrap}
 .rules td:first-child{color:var(--ink)}
@@ -93,12 +88,6 @@ code,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.92em}
 .legend{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--ink-2);margin-top:8px}
 .legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:7px;vertical-align:-1px}
 .legend code{color:var(--ink)}
-dialog{background:var(--panel);color:var(--ink);border:1px solid var(--edge);border-radius:8px;padding:20px;max-width:min(96vw,1000px);width:100%}
-dialog::backdrop{background:rgba(0,0,0,.55)}
-.dlg{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:22px}
-@media (max-width:760px){.dlg{grid-template-columns:1fr}}
-.dlg h3{font-size:24px;font-weight:500}
-.close{float:right;font:inherit;background:var(--paper);border:1px solid var(--edge);border-radius:4px;padding:4px 10px;cursor:pointer;color:var(--ink)}
 .hint{font-size:12.5px;color:var(--ink-3)}
 </style>
 <style>
@@ -124,13 +113,15 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 .title{font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:24px;margin:0 0 2px}
 </style>
 <div class="wrap">
+<a class="back" href="index.html" style="display:inline-block;margin-bottom:10px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;color:var(--ink-2);text-decoration:none">← Universal Dynamics</a>
 <h1>Basin Atlas</h1>
-<p class="lede">A basin map answers one question for one universe: <em>if it starts here, where does it end up?</em> Every square is a starting state; its colour is the destination. Move the mouse over the map to trace the path from that start.</p>
+<p class="lede">A basin map answers one question for one universe: <em>if it starts here, where does it end up?</em> Every square is a starting state; its colour is the destination, and the line from it leads to where one step of the rule goes. Follow the lines and you follow the universe.</p>
 <div class="tabs" role="tablist" id="tabs"></div>
 <div id="panel"></div>
 </div>
+<script src="basin-atlas-data.js"></script>
 <script>
-const DATA = __DATA__;
+const DATA = window.BASIN_DATA;
 const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 const fmt = n => n.toLocaleString("en-US");
 const KIND_VAR = {fixed:"--fixed", cycle:"--cycle", ray:"--ray", helix:"--helix", spiral:"--spiral", undecided:"--other", inert:"--inert", other:"--other"};
@@ -193,33 +184,6 @@ function drift(R, v){
   for (let f = 0; f < R.N; f++){ const row = v[f] > 0 ? R.pos[f] : v[f] < 0 ? R.neg[f] : null; if (row) for (let e = 0; e < R.N; e++) d[e] += row[e]; }
   return d;
 }
-function trajectory(R, start, radius, limit = 600){
-  const pts = [start.slice()], seen = new Map([[start.join(","), 0]]);
-  let v = start.slice(), lastD = null;
-  for (let t = 1; t <= limit; t++){
-    const d = drift(R, v);
-    if (d.every(x => x === 0)) return {pts, end: "fixed"};
-    const w = v.map((x,i) => x + d[i]); lastD = d;
-    const key = w.join(",");
-    if (seen.has(key)){ pts.push(w); return {pts, end: "cycle", period: t - seen.get(key), first: seen.get(key)}; }
-    seen.set(key, t); pts.push(w); v = w;
-    if (w.some(x => Math.abs(x) > radius * 3 + 6)) return {pts, end: "escapes", dir: d};
-  }
-  return {pts, end: "long", dir: lastD};
-}
-function describe(tr, R, N){
-  const s = tr.pts[0], n = tr.pts.length - 1;
-  const head = `start ${vec(s)}`;
-  const steps = tr.pts.slice(1, 9).map(vec).join(" → ") + (n > 8 ? " → …" : "");
-  let tail;
-  switch (tr.end){
-    case "fixed": tail = n === 0 ? `<b>already a fixed point</b>: every value is zero or its rows cancel, nothing changes` : `<b>stops after ${n} step${n>1?"s":""} at ${vec(tr.pts[n])}</b>`; break;
-    case "cycle": tail = `<b>enters a cycle of period ${tr.period}</b> after ${tr.first} step${tr.first===1?"":"s"}: it returns to ${vec(tr.pts[n])}`; break;
-    case "escapes": tail = `<b>leaves for good</b>, drifting ${vec(tr.dir)} every step once it is far enough out`; break;
-    default: tail = `<b>still going after ${n} steps</b>`;
-  }
-  return `${head}${n ? " → " + steps : ""}\n${tail}`;
-}
 function rulesTable(R){
   const N = R.N;
   let rows = "";
@@ -229,122 +193,74 @@ function rulesTable(R){
   return `<table class="rules">${rows}</table><div class="hint" style="margin-top:6px">Each step adds up the rows of every coordinate that is not zero. A zero coordinate contributes nothing.</div>`;
 }
 
-// ---- drawing ----
+// ---- drawing: one pass per map, batched into a few canvas calls ----
 function cellIndex(m, radius, N, x, y, z){
   const side = 2*radius+1;
   return N === 2 ? (x+radius)*side + (y+radius) : ((x+radius)*side + (y+radius))*side + (z+radius);
 }
-function drawBase(canvas, m, radius, N, sliceZ, big){
-  const side = 2*radius+1, ctx = canvas.getContext("2d");
+function drawMap(canvas, m, radius, N, sliceZ){
+  const side = 2*radius+1, ctx = canvas.getContext("2d", {alpha: false});
   const px = Math.floor(canvas.width / side), off = Math.floor((canvas.width - px*side)/2);
-  const colors = classColors(m);
+  const colors = classColors(m), cells = m.cells;
   ctx.fillStyle = C.paper; ctx.fillRect(0,0,canvas.width,canvas.height);
-  const cells = m.cells;
+  // cells grouped by colour: one fillStyle change per destination
+  const byClass = new Map();
   for (let x = -radius; x <= radius; x++) for (let y = -radius; y <= radius; y++){
     const cls = GLYPHS.indexOf(cells[cellIndex(m, radius, N, x, y, sliceZ)]);
+    let arr = byClass.get(cls); if (!arr){ arr = []; byClass.set(cls, arr); }
+    arr.push(x, y);
+  }
+  for (const [cls, arr] of byClass){
     ctx.fillStyle = colors[cls];
-    ctx.fillRect(off + (x+radius)*px, off + (radius - y)*px, px, px);
+    for (let i = 0; i < arr.length; i += 2) ctx.fillRect(off + (arr[i]+radius)*px, off + (radius - arr[i+1])*px, px, px);
   }
-  if (big){
-    ctx.strokeStyle = C.grid; ctx.lineWidth = 1; ctx.globalAlpha = 0.6; ctx.beginPath();
-    for (let i = 0; i <= side; i++){ ctx.moveTo(off + i*px + .5, off); ctx.lineTo(off + i*px + .5, off + side*px); ctx.moveTo(off, off + i*px + .5); ctx.lineTo(off + side*px, off + i*px + .5); }
-    ctx.stroke(); ctx.globalAlpha = 1;
-  }
-  // axes through the origin
-  ctx.strokeStyle = C.origin; ctx.lineWidth = big ? 1.5 : 1; ctx.globalAlpha = 0.5; ctx.beginPath();
+  // grid + axes: two paths
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 1; ctx.globalAlpha = 0.35; ctx.beginPath();
+  for (let i = 0; i <= side; i++){ ctx.moveTo(off + i*px + .5, off); ctx.lineTo(off + i*px + .5, off + side*px); ctx.moveTo(off, off + i*px + .5); ctx.lineTo(off + side*px, off + i*px + .5); }
+  ctx.stroke(); ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = C.origin; ctx.lineWidth = 1.5; ctx.beginPath();
   ctx.moveTo(off + radius*px + px/2, off); ctx.lineTo(off + radius*px + px/2, off + side*px);
   ctx.moveTo(off, off + radius*px + px/2); ctx.lineTo(off + side*px, off + radius*px + px/2);
   ctx.stroke(); ctx.globalAlpha = 1;
-  // destination markers: ● fixed point, ○ cycle, → escape direction
-  const cx = x => off + (x+radius)*px + px/2, cy = y => off + (radius - y)*px + px/2;
-  const r = Math.max(2.5, px*0.36);
-  const centroids = {};
+  // flow lines: each start is joined to the state it steps to, so consecutive steps chain into paths
+  const R = decodeRows(m.index, N);
+  ctx.strokeStyle = C.path; ctx.fillStyle = C.path; ctx.lineWidth = Math.max(1, px * 0.09); ctx.lineCap = "round"; ctx.globalAlpha = 0.7;
+  ctx.beginPath();
+  const dots = [], rings = [], leaving = [];
   for (let x = -radius; x <= radius; x++) for (let y = -radius; y <= radius; y++){
-    const cls = GLYPHS.indexOf(cells[cellIndex(m, radius, N, x, y, sliceZ)]);
-    const k = m.classes[cls].kind; if (k !== "ray" && k !== "helix") continue;
-    const c = centroids[cls] = centroids[cls] || {x:0,y:0,n:0}; c.x += x; c.y += y; c.n++;
+    const d = drift(R, N === 2 ? [x, y] : [x, y, sliceZ]);
+    const X = off + (x+radius)*px + px/2, Y = off + (radius - y)*px + px/2;
+    if (d[0] === 0 && d[1] === 0){ dots.push(X, Y); if (N === 3 && d[2] !== 0) rings.push(X, Y); continue; }
+    const X1 = X + d[0]*px, Y1 = Y - d[1]*px;
+    if (N === 3 && d[2] !== 0){ leaving.push(X, Y, X1, Y1); continue; }
+    ctx.moveTo(X, Y); ctx.lineTo(X1, Y1);
   }
-  m.classes.forEach((c, i) => {
-    if (c.kind === "fixed" || c.kind === "cycle"){
-      if (N === 3 && c.id[2] !== sliceZ) return;
-      if (Math.abs(c.id[0]) > radius || Math.abs(c.id[1]) > radius) return;
-      ctx.beginPath(); ctx.arc(cx(c.id[0]), cy(c.id[1]), r, 0, Math.PI*2);
-      ctx.lineWidth = Math.max(1.2, px*0.14); ctx.strokeStyle = C.halo; ctx.stroke();
-      if (c.kind === "fixed"){ ctx.fillStyle = C.ink; ctx.fill(); } else { ctx.lineWidth = Math.max(1, px*0.1); ctx.strokeStyle = C.ink; ctx.stroke(); }
-    } else if ((c.kind === "ray" || c.kind === "helix") && centroids[i] && centroids[i].n >= 6){
-      const ce = centroids[i], X = cx(ce.x/ce.n), Y = cy(ce.y/ce.n);
-      const dx = c.id[0], dy = -c.id[1], len = Math.hypot(dx,dy) || 1, L = Math.max(px*2.2, 14);
-      const ex = X + dx/len*L, ey = Y + dy/len*L;
-      ctx.lineWidth = Math.max(1.5, px*0.18); ctx.strokeStyle = C.halo; arrow(ctx, X, Y, ex, ey, Math.max(4, px*0.6), c.kind === "helix");
-      ctx.lineWidth = Math.max(1, px*0.11); ctx.strokeStyle = C.ink; arrow(ctx, X, Y, ex, ey, Math.max(4, px*0.6), c.kind === "helix");
-    }
-  });
-  canvas._geom = {px, off, radius, N, sliceZ};
-}
-function arrow(ctx, x0, y0, x1, y1, head, dashed){
-  if (dashed) ctx.setLineDash([4, 3]);
-  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke(); ctx.setLineDash([]);
-  const a = Math.atan2(y1-y0, x1-x0);
-  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x1 - head*Math.cos(a - .5), y1 - head*Math.sin(a - .5)); ctx.moveTo(x1,y1); ctx.lineTo(x1 - head*Math.cos(a + .5), y1 - head*Math.sin(a + .5)); ctx.stroke();
-}
-// Base image cached in an offscreen canvas so hover redraws are a blit + a polyline.
-function ensureBase(canvas, m, radius, N, sliceZ, big){
-  const key = `${m.index}|${sliceZ}|${canvas.width}|${C.ink}`;
-  if (canvas._baseKey !== key){
-    const b = document.createElement("canvas"); b.width = canvas.width; b.height = canvas.height;
-    drawBase(b, m, radius, N, sliceZ, big); canvas._base = b; canvas._geom = b._geom; canvas._baseKey = key;
+  ctx.stroke();
+  if (leaving.length){ ctx.setLineDash([px*0.2, px*0.2]); ctx.beginPath(); for (let i = 0; i < leaving.length; i += 4){ ctx.moveTo(leaving[i], leaving[i+1]); ctx.lineTo(leaving[i+2], leaving[i+3]); } ctx.stroke(); ctx.setLineDash([]); }
+  ctx.globalAlpha = 0.9;
+  const dr = Math.max(1.5, px * 0.1), rr = Math.max(3, px * 0.16);
+  ctx.beginPath(); for (let i = 0; i < dots.length; i += 2){ ctx.moveTo(dots[i] + dr, dots[i+1]); ctx.arc(dots[i], dots[i+1], dr, 0, Math.PI*2); } ctx.fill();
+  if (rings.length){ ctx.beginPath(); for (let i = 0; i < rings.length; i += 2){ ctx.moveTo(rings[i] + rr, rings[i+1]); ctx.arc(rings[i], rings[i+1], rr, 0, Math.PI*2); } ctx.stroke(); }
+  ctx.globalAlpha = 1;
+  // destination markers: ● fixed point, ○ cycle
+  const cx = x => off + (x+radius)*px + px/2, cy = y => off + (radius - y)*px + px/2, r = Math.max(2.5, px*0.36);
+  for (const c of m.classes){
+    if (c.kind !== "fixed" && c.kind !== "cycle") continue;
+    if (N === 3 && c.id[2] !== sliceZ) continue;
+    if (Math.abs(c.id[0]) > radius || Math.abs(c.id[1]) > radius) continue;
+    ctx.beginPath(); ctx.arc(cx(c.id[0]), cy(c.id[1]), r, 0, Math.PI*2);
+    ctx.lineWidth = Math.max(1.2, px*0.14); ctx.strokeStyle = C.halo; ctx.stroke();
+    if (c.kind === "fixed"){ ctx.fillStyle = C.ink; ctx.fill(); } else { ctx.lineWidth = Math.max(1, px*0.1); ctx.strokeStyle = C.ink; ctx.stroke(); }
   }
-  return canvas._base;
 }
-function drawMap(canvas, m, radius, N, sliceZ, big, tr){
-  const base = ensureBase(canvas, m, radius, N, sliceZ, big);
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(base, 0, 0);
-  if (!tr) return;
-  const {px, off} = canvas._geom;
-  const cx = x => off + (x+radius)*px + px/2, cy = y => off + (radius - y)*px + px/2;
-  const P = tr.pts;
-  const onSlice = p => N === 2 || p[2] === sliceZ;
-  const stroke = (w, col) => { ctx.lineWidth = w; ctx.strokeStyle = col; ctx.beginPath();
-    for (let i = 0; i < P.length; i++){ const p = P[i]; if (i === 0) ctx.moveTo(cx(p[0]), cy(p[1])); else ctx.lineTo(cx(p[0]), cy(p[1])); }
-    ctx.stroke(); };
-  ctx.lineJoin = "round"; ctx.lineCap = "round";
-  stroke(Math.max(4, px*0.45), C.halo); stroke(Math.max(1.6, px*0.18), C.path);
-  const rr = Math.max(2, px*0.22);
-  for (let i = 0; i < P.length; i++){
-    const p = P[i]; ctx.beginPath(); ctx.arc(cx(p[0]), cy(p[1]), i === 0 ? rr*1.6 : rr, 0, Math.PI*2);
-    ctx.fillStyle = onSlice(p) ? C.path : C.halo; ctx.fill();
-    if (!onSlice(p)){ ctx.lineWidth = 1; ctx.strokeStyle = C.path; ctx.stroke(); }
-  }
-  const last = P[P.length-1];
-  if (tr.end === "fixed"){ ctx.beginPath(); ctx.arc(cx(last[0]), cy(last[1]), rr*2.2, 0, Math.PI*2); ctx.lineWidth = 2; ctx.strokeStyle = C.path; ctx.stroke(); }
-  if (tr.end === "escapes" && P.length > 1){ const q = P[P.length-2]; ctx.lineWidth = Math.max(1.6, px*0.18); ctx.strokeStyle = C.path; arrow(ctx, cx(q[0]), cy(q[1]), cx(last[0]), cy(last[1]), Math.max(6, px*0.8), false); }
-}
-// Build an interactive map element. Hover traces the path; `readout` (optional) receives the description.
 function mapElement(m, N, radius, size, opts = {}){
-  const wrap = document.createElement("div"); wrap.className = "map" + (opts.small ? " small" : "");
-  const side = 2*radius+1;
-  const px = Math.max(1, Math.round(size / side));
+  const wrap = document.createElement("div"); wrap.className = "map";
+  const side = 2*radius+1, px = Math.max(1, Math.round(size / side));
   wrap.innerHTML = `<div class="ay"><span><b>v${SUB[1]}</b> ${radius}</span><span>0</span><span>−${radius}</span></div><canvas width="${px*side}" height="${px*side}" role="img" aria-label="basin map of universe ${m.index}"></canvas><div class="ax"><span>−${radius}</span><span>0</span><span>${radius} <b>v${SUB[0]}</b></span></div>`;
   const cv = wrap.querySelector("canvas");
-  cv._m = m; cv._slice = opts.slice || 0; cv._big = !opts.small;
-  const R = decodeRows(m.index, N);
-  const redraw = tr => drawMap(cv, m, radius, N, cv._slice, cv._big, tr);
-  cv._redraw = () => redraw(cv._tr);
-  if (!opts.lazy) cv._redraw();
-  if (opts.hover !== false){
-    cv.addEventListener("mousemove", e => {
-      const g = cv._geom; if (!g) return;
-      const rect = cv.getBoundingClientRect(), sx = cv.width / rect.width;
-      const x = Math.floor(((e.clientX - rect.left)*sx - g.off) / g.px) - radius, y = radius - Math.floor(((e.clientY - rect.top)*sx - g.off) / g.px);
-      if (Math.abs(x) > radius || Math.abs(y) > radius) return;
-      const start = N === 2 ? [x, y] : [x, y, cv._slice];
-      if (cv._tr && cv._tr.pts[0].join(",") === start.join(",")) return;
-      cv._tr = trajectory(R, start, radius); redraw(cv._tr);
-      if (opts.readout) opts.readout.innerHTML = describe(cv._tr, R, N);
-    });
-    cv.addEventListener("mouseleave", () => { cv._tr = null; redraw(null); if (opts.readout && !opts.keepReadout) opts.readout.innerHTML = opts.idle || ""; });
-  }
+  cv._slice = opts.slice || 0;
+  cv._redraw = () => drawMap(cv, m, radius, N, cv._slice);
+  cv._redraw();
   return wrap;
 }
 function findMap(size, index){ return DATA[size].maps.find(m => m.index === index); }
@@ -369,8 +285,8 @@ const TABS = [
   {id: "guide", label: "How to read", size: "2", ids: [52],
    html: m => `<ol>
       <li>The map is the plane of starting states. Right is larger <b>v${SUB[0]}</b>, up is larger <b>v${SUB[1]}</b>; the crossing lines are the axes through (0, 0).</li>
-      <li>Each square is one start. Its colour says which destination that start reaches.</li>
-      <li>Destinations are marked on the map: <span class="mk">●</span>a fixed point, <span class="mk">○</span>a cycle, <span class="mk">→</span>an escape direction, drawn inside the region that escapes that way.</li>
+      <li>Each square is one start. Its colour says which destination that start reaches; the line from its centre leads to the state one step later, so the lines chain into the paths the universe follows (a dot means the rule does nothing at that start).</li>
+      <li>Destinations are marked on the map: <span class="mk">●</span>a fixed point, <span class="mk">○</span>a cycle. Regions whose arrows lead off the edge escape; the legend gives the direction.</li>
       <li>The universe's rule is below. It is the same rule everywhere; the shape comes only from which coordinates are positive or negative.</li>
     </ol>
     <div class="keys"><span><i style="background:${C.fixed}"></i>stops at a fixed point</span><span><i style="background:${C.cycle}"></i>enters a cycle</span><span><i style="background:${C.ray}"></i>escapes in a straight direction</span><span><i style="background:${C.helix}"></i>escapes with a twist</span><span><i style="background:${C.inert}"></i>frozen cell</span></div>`},
@@ -441,18 +357,16 @@ function showTab(){
     ${tab.html ? tab.html(m) : ""}
     ${picker}
     ${m ? `<div class="title">Universe ${m.index}</div><div class="hint">${summarize(m)}</div>
-    ${N===3 ? `<div class="controls" style="margin:10px 0 4px"><label>slice v${SUB[2]} = <span id="slv">${state.slice}</span> <input id="slice" type="range" min="-${radius}" max="${radius}" value="${state.slice}"></label><span class="hint">size 3 starts fill a cube; the map is one slice of it</span></div>` : ""}
+    ${N===3 ? `<div class="controls" style="margin:10px 0 4px"><label>slice v${SUB[2]} = <span id="slv">${state.slice}</span> <input id="slice" type="range" min="-${radius}" max="${radius}" value="${state.slice}"></label><span class="hint">size 3 starts fill a cube; the map is one slice of it. Solid lines are steps within the slice, dashed ones also change v₂; a ringed dot moves only across slices</span></div>` : ""}
     ${rulesTable(decodeRows(m.index, N))}
     ${legendHtml(m, 8)}
-    <div class="readout" id="readout">hover the map to trace a path</div>
     <p class="hint" style="margin-top:12px">Replay a start on the command line: <code>system show --size ${N} --index ${m.index} --start v0,v1${N===3?",v2":""}</code></p>` : `<div class="hint">no universe matches</div>`}
   </div></div>`;
   if (m){
-    const readout = document.getElementById("readout");
-    const el = mapElement(m, N, radius, 640, {readout, slice: N === 3 ? state.slice : 0, idle: "hover the map to trace a path"});
+    const el = mapElement(m, N, radius, 600, {slice: N === 3 ? state.slice : 0});
     panel.querySelector("#vmap").appendChild(el);
     const sl = document.getElementById("slice");
-    if (sl) sl.oninput = e => { const cv = el.querySelector("canvas"); state.slice = cv._slice = Number(e.target.value); cv._tr = null; document.getElementById("slv").textContent = state.slice; cv._redraw(); };
+    if (sl) sl.oninput = e => { const cv = el.querySelector("canvas"); state.slice = cv._slice = Number(e.target.value); document.getElementById("slv").textContent = state.slice; cv._redraw(); };
   }
   const pick = i => { state.current[tab.id] = i; showTab(); };
   panel.querySelectorAll("[data-i]").forEach(b => b.addEventListener("click", () => pick(Number(b.dataset.i))));
@@ -474,5 +388,7 @@ function buildTabs(){
 readTheme();
 buildTabs();
 showTab();
+// Keep the page DOM small: the script text is not needed once it has run.
+document.currentScript.remove();
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { readTheme(); for (const d of Object.values(DATA)) for (const x of d.maps) x._colors = null; showTab(); });
 </script>

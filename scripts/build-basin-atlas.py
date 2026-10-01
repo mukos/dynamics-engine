@@ -66,6 +66,9 @@ data = {
     "3": load("results/basinscan-size3-sampled.json", False),
 }
 tmpl = open(root / "scripts/basin-atlas.template.html").read()
-out = tmpl.replace("__DATA__", json.dumps(data, separators=(",", ":")))
-open(root / "docs/basin-atlas.html", "w").write(out)
-print("wrote docs/basin-atlas.html", len(out), {k: len(v["maps"]) for k, v in data.items()})
+# Data goes in its own script file: a multi-megabyte inline <script> sits in the DOM and makes
+# every later DOM change slow in browsers that snapshot the document.
+blob = "window.BASIN_DATA=" + json.dumps(data, separators=(",", ":")) + ";"
+open(root / "docs/basin-atlas-data.js", "w").write(blob)
+open(root / "docs/basin-atlas.html", "w").write(tmpl)
+print("wrote docs/basin-atlas.html", len(tmpl), "docs/basin-atlas-data.js", len(blob), {k: len(v["maps"]) for k, v in data.items()})
