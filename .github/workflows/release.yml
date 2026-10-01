@@ -32,7 +32,7 @@ jobs:
           - { target: aarch64-apple-darwin, os: macos-latest, test: true }
           - { target: x86_64-pc-windows-msvc, os: windows-latest, test: true }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
 
@@ -71,7 +71,7 @@ jobs:
           # Smoke test, except for Intel macOS binaries built on an Apple-silicon runner.
           if [[ "${{ matrix.target }}" != x86_64-apple-darwin ]]; then ./dist/dynamics-engine* show 2-613 | tail -2; fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.target }}
           path: dynamics-engine-${{ matrix.target }}.*
@@ -80,7 +80,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: assets
           merge-multiple: true
