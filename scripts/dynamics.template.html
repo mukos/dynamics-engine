@@ -1,51 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <title>Dynamics Engine</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="An exact classifier for small sign-driven integer dynamical systems, written in Rust: 387,420,489 universes, five fates, live in the browser.">
+<meta name="theme-color" content="#FCFBF7">
+<meta property="og:title" content="Dynamics Engine">
+<meta property="og:description" content="Every three-element universe of v(t+1) = v(t) + d(sign v(t)), classified exactly in under seven seconds of Rust.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23FCFBF7'/%3E%3Cpath d='M16 16l6-9 4 11-12 6-7-8 9-8' fill='none' stroke='%232F55D4' stroke-width='2.4' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='16' r='2.6' fill='%231D2433'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=STIX+Two+Text:ital@0;1&display=swap">
 <style>
+/* ---------- theme: a white maths notebook ---------- */
 :root{
-  --paper:#F3F5F8; --panel:#FFFFFF; --ink:#1B2430; --ink-2:#4A5666; --ink-3:#7B8794;
-  --lattice:#E3E7EC; --axis:#9AA6B4; --edge:#CBD2DA; --hi:#FFF4D6; --hi-edge:#E5B84A;
-  --fixed:#3B5BDB; --cycle:#0B8A7A; --ray:#C27400; --helix:#8E44AD; --spiral:#C92A2A;
-  --start:#1B2430; --tab:#E6EAEF;
+  color-scheme: light;
+  --paper:#FCFBF7; --card:#FFFFFF; --ink:#1D2433; --ink-2:#4A5466; --ink-3:#7F8A9C;
+  --grid:#E6ECF4; --grid-major:#D6DFEB; --margin:#E9A0A0; --edge:#DCE1E8;
+  --lattice:#EBEFF5; --axis:#A3AEBD; --start:#1D2433; --hi:#FFF7DF; --hi-edge:#E2B23C;
+  --pencil:#5B6B86; --panel:#FFFFFF;
+  --fixed:#2F55D4; --cycle:#0E8C7E; --ray:#D9730D; --helix:#8E44AD; --spiral:#D6336C;
+  --serif:"Fraunces",Georgia,serif; --sans:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace; --hand:"Caveat","Segoe Print",cursive;
+  --math:"STIX Two Text","Cambria Math",Georgia,serif;
+  --sheet:1180px; --gutter:clamp(16px,4vw,40px);
+  --shadow:0 1px 0 rgba(29,36,51,.04),0 10px 28px -16px rgba(29,36,51,.28);
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --paper:#12161B; --panel:#1A2027; --ink:#E7ECF2; --ink-2:#B4BEC9; --ink-3:#7F8B98;
-    --lattice:#242C35; --axis:#5C6977; --edge:#2E3740; --hi:#2A2410; --hi-edge:#B08A2E;
-    --fixed:#7A93F0; --cycle:#3FC2B0; --ray:#E9A03A; --helix:#C58BE0; --spiral:#F06A6A;
-    --start:#E7ECF2; --tab:#232B34;
-  }
+*{box-sizing:border-box}
+html{background:var(--paper);scroll-behavior:smooth;scroll-padding-top:72px;-webkit-text-size-adjust:100%}
+body{margin:0;background:transparent;color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+[hidden]{display:none!important}
+a{color:var(--fixed)}
+::selection{background:#DCE5FB}
+img,svg,canvas{max-width:100%}
+
+/* graph paper that drifts slower than the page (parallax) */
+.paper{position:fixed;inset:-240px 0 -240px 0;z-index:-2;pointer-events:none;will-change:transform;
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(var(--grid-major) 1px,transparent 1px),linear-gradient(90deg,var(--grid-major) 1px,transparent 1px),
+    linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:120px 120px,120px 120px,24px 24px,24px 24px;background-position:-1px -1px}
+.margin-line{position:fixed;top:0;bottom:0;width:1.5px;background:var(--margin);opacity:.75;z-index:-1;pointer-events:none;
+  left:max(14px,calc((100vw - var(--sheet)) / 2 - 28px))}
+@media (max-width:760px){.margin-line{left:10px;opacity:.5}}
+
+/* ---------- nav ---------- */
+.nav{position:fixed;top:0;left:0;right:0;z-index:20;height:58px;display:flex;align-items:center;
+  background:rgba(252,251,247,.86);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid rgba(214,223,235,.9);
+  transform:translateY(-100%);transition:transform .35s ease}
+.nav.show{transform:none}
+.nav .in{width:100%;max-width:var(--sheet);margin:0 auto;padding:0 var(--gutter);display:flex;align-items:center;gap:22px}
+.brand{font-family:var(--serif);font-size:20px;color:var(--ink);text-decoration:none;display:flex;align-items:center;gap:10px;white-space:nowrap}
+.brand i{font-style:italic}
+.nav ul{list-style:none;display:flex;gap:18px;margin:0 0 0 auto;padding:0;font-size:14px}
+.nav ul a{color:var(--ink-2);text-decoration:none;white-space:nowrap}
+.nav ul a:hover,.nav ul a.on{color:var(--ink)}
+.nav ul a.on{text-decoration:underline;text-decoration-color:var(--fixed);text-underline-offset:6px;text-decoration-thickness:2px}
+.nav .gh{display:inline-flex;align-items:center;gap:7px;font-size:14px;color:var(--ink);text-decoration:none;border:1px solid var(--edge);border-radius:999px;padding:5px 12px;background:var(--card);white-space:nowrap}
+.progress{position:absolute;left:0;bottom:-1px;height:2px;width:100%;transform-origin:0 50%;transform:scaleX(0);
+  background:linear-gradient(90deg,var(--fixed),var(--cycle),var(--ray),var(--helix),var(--spiral))}
+@media (max-width:980px){.nav ul{display:none}.nav .gh{margin-left:auto}}
+
+/* ---------- hero ---------- */
+.hero{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:center;justify-content:center;overflow:hidden;isolation:isolate}
+.rosette{position:absolute;will-change:transform,opacity;transition:opacity 1.4s ease;pointer-events:none}
+.rosette canvas{display:block;width:100%;height:100%}
+.rosette .tag{position:absolute;left:50%;top:100%;transform:translate(-50%,-6px);font-family:var(--hand);font-size:21px;color:var(--pencil);white-space:nowrap;opacity:0;transition:opacity .8s ease}
+.rosette.done .tag{opacity:1}
+.hero-copy{position:relative;z-index:2;text-align:center;padding:110px var(--gutter) 72px;max-width:1000px;will-change:transform}
+.hero-copy::before{content:"";position:absolute;inset:6% -4%;z-index:-1;background:radial-gradient(closest-side,rgba(252,251,247,.97),rgba(252,251,247,.9) 58%,rgba(252,251,247,0))}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)}
+.hero h1{font-family:var(--serif);font-weight:400;font-size:clamp(50px,10.5vw,132px);line-height:.92;letter-spacing:-.03em;margin:18px 0 22px}
+.hero h1 i{font-weight:400;color:var(--fixed)}
+.equation{font-family:var(--math);font-size:clamp(20px,3.1vw,36px);color:var(--ink);margin:0 auto;display:inline-block;position:relative;padding:6px 12px}
+.equation .v{font-style:italic}
+.equation .op{padding:0 .18em}
+.equation .note{position:absolute;left:calc(100% + 54px);top:50%;font-family:var(--hand);font-size:23px;color:var(--spiral);transform:translateY(-50%) rotate(-4deg);white-space:nowrap}
+.equation .note svg{position:absolute;left:-52px;top:-2px;width:46px;height:30px;overflow:visible}
+@media (max-width:1100px){.equation .note{display:none}}
+.lede{font-size:clamp(16px,1.8vw,20px);color:var(--ink-2);max-width:40em;margin:22px auto 0}
+.lede b{color:var(--ink);font-weight:500}
+.cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font:500 15px/1 var(--sans);padding:13px 20px;border-radius:999px;text-decoration:none;border:1px solid var(--ink);transition:transform .15s ease,box-shadow .15s ease;cursor:pointer}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn.ghost{background:var(--card);color:var(--ink);border-color:var(--edge)}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.btn svg{width:16px;height:16px}
+.hero-stats{display:grid;grid-template-columns:repeat(4,auto);justify-content:center;gap:12px clamp(20px,4vw,56px);margin-top:48px}
+.hero-stats div{text-align:center}
+.hero-stats b{display:block;font:500 clamp(20px,2.4vw,28px)/1.1 var(--mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+.hero-stats span{font-size:12.5px;color:var(--ink-3)}
+.scroll-cue{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);font-family:var(--hand);font-size:20px;color:var(--pencil);z-index:2;display:flex;flex-direction:column;align-items:center;animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translate(-50%,6px)}}
+@media (max-height:720px),(max-width:640px){.scroll-cue{display:none}}
+@media (max-width:640px){
+  .hero-copy{padding:92px 18px 64px}
+  .hero-stats{grid-template-columns:repeat(2,auto);margin-top:36px}
+  .cta .btn{flex:1 1 100%}
+  .kicker{font-size:11px;letter-spacing:.12em}
 }
-:root[data-theme="dark"]{
-  --paper:#12161B; --panel:#1A2027; --ink:#E7ECF2; --ink-2:#B4BEC9; --ink-3:#7F8B98;
-  --lattice:#242C35; --axis:#5C6977; --edge:#2E3740; --hi:#2A2410; --hi-edge:#B08A2E;
-  --fixed:#7A93F0; --cycle:#3FC2B0; --ray:#E9A03A; --helix:#C58BE0; --spiral:#F06A6A;
-  --start:#E7ECF2; --tab:#232B34;
+
+/* ---------- sheet sections ---------- */
+main{position:relative}
+.sec{position:relative;max-width:var(--sheet);margin:0 auto;padding:120px var(--gutter) 40px}
+.sec-no{position:absolute;left:calc(var(--gutter) - 72px);top:122px;font-family:var(--hand);font-size:30px;color:var(--spiral);opacity:.85}
+@media (max-width:1300px){.sec-no{position:static;display:block;margin-bottom:-6px}}
+@media (max-width:640px){.sec{padding-top:76px}}
+.eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px}
+h2{font-family:var(--serif);font-weight:400;font-size:clamp(34px,4.6vw,56px);line-height:1.04;letter-spacing:-.02em;margin:0 0 6px;position:relative;display:inline-block}
+h2 i{color:var(--fixed)}
+h2 .uline{position:absolute;left:-2%;bottom:-14px;width:104%;height:16px;overflow:visible}
+h2 .uline path{fill:none;stroke:var(--hi-edge);stroke-width:3;stroke-linecap:round;stroke-dasharray:var(--len,600);stroke-dashoffset:var(--len,600);transition:stroke-dashoffset 1.3s cubic-bezier(.6,.1,.2,1) .2s}
+h2.in .uline path{stroke-dashoffset:0}
+.sub{color:var(--ink-2);max-width:44em;margin:22px 0 0;font-size:17px}
+@media (max-width:640px){.sub{font-size:16px}}
+.hand{font-family:var(--hand);color:var(--pencil);font-size:22px;line-height:1.2}
+.math{font-family:var(--math)}
+.math i,.mi{font-style:italic;font-family:var(--math)}
+code{font-family:var(--mono);font-size:.88em}
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .9s ease,transform .9s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}.d4{transition-delay:.32s}
+
+/* ---------- the rule: scrollytelling ---------- */
+.story{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:56px;margin-top:40px}
+.steps{padding-bottom:20vh}
+.step{min-height:72vh;display:flex;flex-direction:column;justify-content:center;opacity:.28;transition:opacity .5s ease}
+.step.on{opacity:1}
+.step h3{font-family:var(--serif);font-weight:500;font-size:28px;line-height:1.15;margin:0 0 10px}
+.step p{margin:0 0 12px;color:var(--ink-2);max-width:32em}
+.formula{font-family:var(--math);font-size:21px;color:var(--ink);background:var(--card);border:1px solid var(--edge);border-radius:8px;padding:10px 14px;display:inline-block;margin:4px 0 12px;box-shadow:var(--shadow);max-width:100%;overflow-x:auto}
+.figure{position:sticky;top:96px;height:min(76vh,640px);display:flex;align-items:center;justify-content:center}
+.board{width:100%;max-width:560px;aspect-ratio:1/1;background:var(--card);border:1px solid var(--edge);border-radius:14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.board svg{width:100%;height:100%;display:block}
+.layer{transition:opacity .7s ease,transform .9s cubic-bezier(.2,.7,.2,1);transform-origin:260px 260px}
+.layer.off{opacity:0;transform:scale(.94)}
+.board .cap{position:absolute;left:16px;bottom:10px;right:16px;font-family:var(--hand);font-size:21px;color:var(--pencil);text-align:center;line-height:1.1}
+@media (max-width:900px){
+  .story{grid-template-columns:1fr;gap:0;margin-top:24px}
+  .figure{order:-1;top:60px;height:auto;z-index:2;padding:8px 0 14px;background:linear-gradient(var(--paper) 88%,rgba(252,251,247,0))}
+  .board{max-width:min(92vw,44vh)}
+  .board .cap{font-size:18px}
+  .step{min-height:64vh;opacity:1}
+  .step>div{background:rgba(255,255,255,.96);border:1px solid var(--edge);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+  .step h3{font-size:23px}
+  .formula{font-size:18px}
 }
-html{background:var(--paper)}
-body{background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.5;margin:0}
-.wrap{max-width:1240px;margin:0 auto;padding:32px 24px 56px}
-header{display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:18px}
-h1{font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:38px;line-height:1.05;margin:0;letter-spacing:-.01em}
-header p{margin:6px 0 0;color:var(--ink-2);max-width:66ch}
-.intro{text-align:center;display:flex;flex-direction:column;align-items:center;padding:8px 0 4px}
-.intro h1{font-size:44px}
-.intro p{max-width:68ch;margin-left:auto;margin-right:auto}
-.intro p:first-of-type{margin-top:10px}
-.tabs button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--edge);border-radius:4px;padding:6px 12px;cursor:pointer}
-.views button:focus-visible,.transport button:focus-visible,.tabs button:focus-visible{outline:2px solid var(--hi-edge);outline-offset:2px}
-.viewbar{display:flex;flex-direction:column;align-items:center;gap:12px;margin:6px 0 22px}
-.views{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:min(100%,780px)}
-.views button{display:flex;align-items:center;justify-content:center;gap:14px;padding:14px 18px;border:1px solid var(--edge);border-radius:10px;background:var(--panel);color:var(--ink-2);cursor:pointer;text-align:left;transition:border-color .15s}
+
+/* ---------- five fates ---------- */
+.fates{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:40px 0 26px}
+@media (max-width:1060px){.fates{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){
+  .fates{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:min(78vw,300px);overflow-x:auto;scroll-snap-type:x mandatory;
+    margin:28px calc(-1 * var(--gutter)) 18px;padding:12px var(--gutter) 18px;scrollbar-width:none}
+  .fates::-webkit-scrollbar{display:none}
+  .fate{scroll-snap-align:center}
+}
+.swipe{display:none;text-align:center;font-family:var(--hand);font-size:19px;color:var(--pencil);margin:-8px 0 14px}
+@media (max-width:760px){.swipe{display:block}}
+.fate{margin:0;background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow);position:relative;transition:transform .25s ease,box-shadow .25s ease,opacity .9s ease}
+.fate::before,.stat::before{content:"";position:absolute;left:12px;right:12px;top:-1px;height:3px;border-radius:0 0 3px 3px;background:var(--c)}
+@media (hover:hover){.fate:hover{transform:translateY(-4px) rotate(-.4deg);box-shadow:0 1px 0 rgba(29,36,51,.04),0 22px 40px -20px rgba(29,36,51,.35)}}
+.fate .hd{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.fate .nm{font-family:var(--serif);font-size:24px;font-weight:500;line-height:1;color:var(--c)}
+.tg{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.fate .cert{font-family:var(--math);font-size:15.5px;color:var(--ink);border-top:1px dashed var(--edge);padding-top:8px}
+.fate figcaption{font-size:13px;color:var(--ink-2);line-height:1.45}
+.fate figcaption .tg{display:block;margin-top:4px}
+.viewbar{display:flex;flex-direction:column;align-items:center;gap:12px;margin:8px 0 10px}
+.views{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:min(100%,760px)}
+.views button{display:flex;align-items:center;justify-content:center;gap:14px;padding:14px 18px;border:1px solid var(--edge);border-radius:12px;background:var(--card);color:var(--ink-2);cursor:pointer;text-align:left;transition:border-color .15s,background .15s,color .15s;box-shadow:var(--shadow)}
 .views button:hover{border-color:var(--ink-3);color:var(--ink)}
 .views button .ico{width:34px;height:34px;stroke-width:1.4}
-.views button b{display:block;font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:21px;line-height:1.1;color:inherit}
+.views button b{display:block;font-family:var(--serif);font-weight:500;font-size:21px;line-height:1.1;color:inherit}
 .views button small{display:block;font-size:12.5px;opacity:.75;margin-top:2px}
 .views button[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-@media (max-width:620px){.views button{flex-direction:column;text-align:center;gap:6px;padding:12px 8px}.views button small{display:none}}
-.transport{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 6px;background:var(--panel);border:1px solid var(--edge);border-radius:999px;padding:5px 8px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px;color:var(--ink-2)}
-.transport button{display:inline-flex;align-items:center;gap:6px;font:inherit;color:var(--ink);background:transparent;border:1px solid transparent;border-radius:999px;padding:5px 12px;cursor:pointer}
+@media (max-width:620px){.views button{flex-direction:column;text-align:center;gap:6px;padding:12px 6px}.views button small{display:none}.views button b{font-size:17px}.views button .ico{width:28px;height:28px}}
+.modedesc{margin:0;max-width:62ch;text-align:center;font-size:14.5px;color:var(--ink-2)}
+.transport{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 6px;background:var(--card);border:1px solid var(--edge);border-radius:999px;padding:5px 8px;font-family:var(--mono);font-size:12.5px;color:var(--ink-2);box-shadow:var(--shadow)}
+.transport button{display:inline-flex;align-items:center;gap:6px;font:inherit;color:var(--ink);background:transparent;border:1px solid transparent;border-radius:999px;padding:6px 12px;cursor:pointer}
 .transport button:hover:not(:disabled){border-color:var(--edge);background:var(--paper)}
 .transport button:disabled{opacity:.4;cursor:default}
 .transport .ico{width:14px;height:14px}
@@ -53,110 +188,401 @@ header p{margin:6px 0 0;color:var(--ink-2);max-width:66ch}
 .speed{display:inline-flex;align-items:center;gap:8px;padding:0 8px}
 .speed input{width:120px;accent-color:var(--ink-2)}
 #spd{min-width:10ch;color:var(--ink)}
-.modedesc{margin:0;max-width:72ch;text-align:center;font-size:14px;color:var(--ink-2)}
-.tabs{display:flex;gap:6px;border-bottom:1px solid var(--edge);margin:10px 0 22px}
-.tabs button{border-bottom:none;border-radius:6px 6px 0 0;padding:10px 18px;font-family:"Fraunces",Georgia,serif;font-size:19px;background:var(--tab);color:var(--ink-2)}
-.tabs button[aria-selected=true]{background:var(--panel);color:var(--ink);position:relative;top:1px}
-.fates{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:4px 0 22px}
-@media (max-width:980px){.fates{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}}
-.fate{margin:0;background:var(--panel);border:1px solid var(--edge);border-top:3px solid var(--c);border-radius:6px;padding:10px 12px 10px;display:flex;flex-direction:column;gap:6px}
-.fate .hd{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-.fate .nm{font-family:"Fraunces",Georgia,serif;font-size:19px;font-weight:600;line-height:1;color:var(--c)}
-.fate .tg{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
-.fate .stage canvas{border-radius:3px}
-.fate .playbtn{width:32px;height:32px;right:6px;bottom:6px}
-.fate .playbtn svg{width:13px;height:13px}
-.fate figcaption{font-size:12.5px;color:var(--ink-2);line-height:1.4}
+@media (max-width:520px){.transport{border-radius:16px}.transport .sep{display:none}.speed input{width:96px}}
 .ico{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.tabs{display:grid;grid-template-columns:repeat(3,1fr)}
-.tabs button{display:flex;align-items:center;justify-content:center;gap:10px}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--fixed);outline-offset:2px}
+
+/* ---------- census chart (HTML bars, so labels stay readable on phones) ---------- */
+.census-wrap{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:40px;align-items:start;margin-top:40px}
+@media (max-width:900px){.census-wrap{grid-template-columns:1fr;gap:20px}}
+.chart{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:22px;box-shadow:var(--shadow);position:relative}
+@media (max-width:640px){.chart{padding:16px}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13.5px;color:var(--ink-2);margin-bottom:18px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+.crow{display:grid;grid-template-columns:132px minmax(0,1fr);gap:4px 16px;align-items:start;margin-bottom:22px}
+.crow:last-child{margin-bottom:4px}
+.clab{font-family:var(--math);font-style:italic;font-size:22px;line-height:1.1}
+.clab small{display:block;font-family:var(--mono);font-style:normal;font-size:12px;color:var(--ink-3);margin-top:4px}
+.cbar{display:flex;gap:2px;height:40px;transform:scaleX(0);transform-origin:0 50%;transition:transform 1.4s cubic-bezier(.2,.8,.2,1)}
+.chart.in .cbar{transform:none}
+.cbar span{display:block;height:100%;border-radius:4px;min-width:2px;cursor:pointer;transition:opacity .15s}
+.cnotes{position:relative;height:20px;margin-top:6px;font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
+.cnotes span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.csmall{font-family:var(--mono);font-size:12px;color:var(--ink-3);margin-top:2px}
+@media (max-width:640px){
+  .crow{grid-template-columns:1fr}
+  .clab{display:flex;align-items:baseline;gap:10px;font-size:20px}
+  .clab small{display:inline;margin:0}
+}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--paper);font-size:12.5px;line-height:1.4;padding:7px 10px;border-radius:8px;white-space:nowrap;opacity:0;transform:translate(-50%,calc(-100% - 12px));transition:opacity .12s;z-index:5}
+.tip b{font-weight:600}
+.facts{display:grid;gap:12px}
+@media (max-width:900px) and (min-width:560px){.facts{grid-template-columns:1fr 1fr}}
+.fact{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.fact b{display:block;font:500 28px/1.1 var(--mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+.fact span{font-size:14px;color:var(--ink-2)}
+
+/* ---------- explorer ---------- */
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:36px 0 22px}
+.tabs button{display:flex;align-items:center;justify-content:center;gap:10px;font-family:var(--serif);font-size:19px;color:var(--ink-2);background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:12px 10px;cursor:pointer;box-shadow:var(--shadow)}
+.tabs button[aria-selected=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .tabs .ico{width:22px;height:22px;stroke:none;fill:currentColor}
-.census{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin-bottom:26px}
-.stat{background:var(--panel);border:1px solid var(--edge);border-radius:6px;padding:12px 14px;border-top:3px solid var(--c)}
-.stat .k{font-family:"Fraunces",Georgia,serif;font-size:19px;color:var(--c);font-weight:600;line-height:1}
-.stat .n{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:18px;margin-top:8px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+@media (max-width:520px){.tabs button{font-size:16px;gap:7px}.tabs .ico{width:18px;height:18px}}
+.census{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:22px}
+.stat{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:12px 14px;position:relative;box-shadow:var(--shadow)}
+.stat .k{font-family:var(--serif);font-size:20px;color:var(--c);font-weight:500;line-height:1}
+.stat .n{font-family:var(--mono);font-size:17px;margin-top:8px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .stat .p{font-size:12.5px;color:var(--ink-3)}
 a.stat{display:block;color:inherit;text-decoration:none}
-a.stat:hover,a.stat:focus-visible{border-color:var(--c);outline:none}
+a.stat:hover{border-color:var(--ink-3)}
 a.stat .k::after{content:" ↓";font-size:14px}
-.rowhead{scroll-margin-top:16px}
-.note{font-size:13px;color:var(--ink-3);margin:-14px 0 30px}
-h2{font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:24px;margin:0 0 4px}
-.sub{color:var(--ink-2);margin:0 0 16px;max-width:76ch}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
-.card{background:var(--panel);border:1px solid var(--edge);border-radius:6px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:8px;position:relative}
-.card.rare{background:var(--hi);border-color:var(--hi-edge)}
+@media (max-width:520px){.census{grid-template-columns:1fr 1fr}}
+.page-sub{color:var(--ink-2);margin:0 0 18px;max-width:52em;font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(290px,100%),1fr));gap:18px}
+.card{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:8px;position:relative;box-shadow:var(--shadow)}
+.card.rare{background:var(--hi);border-color:#EED9A0}
 .card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.chips{display:flex;flex-wrap:wrap;gap:5px}
-.chip{font-family:"Fraunces",Georgia,serif;font-weight:600;font-size:17px;line-height:1;color:var(--c)}
-.chip+.chip::before{content:"+";color:var(--ink-3);font-family:"IBM Plex Sans",sans-serif;font-weight:400;margin:0 6px 0 0}
-.count{text-align:right;font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;line-height:1.2}
+.chip{font-family:var(--serif);font-weight:500;font-size:19px;line-height:1;color:var(--c)}
+.count{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;line-height:1.2}
 .count b{font-size:20px;font-weight:500;display:block}
-.klass{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px;color:var(--ink-2);margin-top:2px}
-.rowhead{grid-column:1/-1;display:flex;align-items:baseline;gap:14px;margin-top:14px;padding-top:12px;border-top:1px solid var(--edge)}
-.rowhead .name{font-family:"Fraunces",Georgia,serif;font-size:24px;font-weight:600;color:var(--c)}
-.rowhead .desc{color:var(--ink-2);font-size:13.5px}
-.badge.typical{background:var(--edge);color:var(--ink)}
 .count span{font-size:11.5px;color:var(--ink-3)}
-.badge{position:absolute;top:-9px;left:12px;background:var(--hi-edge);color:#1B2430;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:3px}
+.klass{font-family:var(--mono);font-size:12.5px;color:var(--ink-2);margin-top:2px}
+.rowhead{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-top:18px;padding-top:14px;border-top:1px dashed var(--grid-major);scroll-margin-top:80px}
+.rowhead .name{font-family:var(--serif);font-size:28px;font-weight:500;color:var(--c)}
+.rowhead .desc{color:var(--ink-2);font-size:14px}
+.badge{position:absolute;top:-10px;left:12px;background:var(--hi-edge);color:#1D2433;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:4px}
+.badge.typical{background:var(--ink);color:var(--paper)}
 .stage{position:relative}
-canvas{width:100%;aspect-ratio:1/1;display:block;border-radius:4px;background:var(--paper)}
-.playbtn{position:absolute;right:10px;bottom:10px;width:44px;height:44px;border-radius:50%;border:1px solid var(--edge);background:var(--panel);color:var(--ink);cursor:pointer;display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.stage canvas{width:100%;aspect-ratio:1/1;display:block;border-radius:8px;background:var(--paper)}
+.playbtn{position:absolute;right:10px;bottom:10px;width:42px;height:42px;border-radius:50%;border:1px solid var(--edge);background:var(--card);color:var(--ink);cursor:pointer;display:grid;place-items:center;box-shadow:0 2px 8px rgba(29,36,51,.14)}
 .playbtn:hover{border-color:var(--ink-3)}
-.playbtn:focus-visible{outline:2px solid var(--hi-edge);outline-offset:2px}
-.playbtn svg{width:18px;height:18px;fill:currentColor}
-.meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 12px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11px;color:var(--ink-3)}
+.playbtn svg{width:16px;height:16px;fill:currentColor}
+.fate .playbtn{width:34px;height:34px;right:6px;bottom:6px}
+.fate .playbtn svg{width:12px;height:12px}
+.meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 12px;font-family:var(--mono);font-size:11px;color:var(--ink-3)}
 .meta span:first-child{color:var(--ink-2)}
-.starts{font-size:12.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:2px}
-.starts i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:7px;vertical-align:middle;font-style:normal}
-.starts code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;color:var(--ink)}
-@media (prefers-reduced-motion: reduce){ .hint{display:none} }
-.pages{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
-[hidden]{display:none!important}
-.pages a{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--edge);border-radius:6px;padding:9px 14px;color:var(--ink);text-decoration:none;font-family:"Fraunces",Georgia,serif;font-size:17px}
-.pages a span{font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:12.5px;color:var(--ink-3)}
-.pages a:hover,.pages a:focus-visible{border-color:var(--ink-3);outline:none}
-</style>
-<div class="wrap">
-<header>
-  <div class="intro">
-    <h1>Dynamics Engine</h1>
-    <p>Every card is one reduced universe simulated live from the zero state: the first step fires every channel, then the state evolves on its own. Cards play while they are on screen and stop when scrolled away; a card's button pauses or resumes it.</p>
-    <!-- Basin Atlas link hidden for now; remove `hidden` to show it again. -->
-    <nav class="pages" hidden><a href="basin-atlas.html">Basin Atlas<span>where every start state ends up</span></a></nav>
-  </div>
-  <div class="fates" id="fates" aria-label="the five fates"></div>
-</header>
-<div class="viewbar">
-  <div class="views" role="group" aria-label="view">
-    <button id="mode-portrait" aria-pressed="true"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5v13M1.5 8h13" opacity=".45"/><path d="M4.5 11.5 3.5 6 8 3.5l4.5 2.5-1 5.5z"/><circle cx="4.5" cy="11.5" r="1.3" fill="currentColor"/></svg><span><b>Portrait</b><small>state in the plane</small></span></button>
-    <button id="mode-waves" aria-pressed="false"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8h13" opacity=".45"/><path d="M1.5 8C3 3 5 3 6.5 8S10 13 11.5 8 13.5 4.5 14.5 6"/></svg><span><b>Waves</b><small>coordinates over time</small></span></button>
-    <button id="mode-radial" aria-pressed="false"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" opacity=".45"/><path d="M8 8c0-1 1.6-1.4 2.2-.3.8 1.4-.4 3-2.2 3S4.7 9 5 7.2C5.4 4.8 8 3.8 10 4.6s3 3 2.6 5"/></svg><span><b>Radial</b><small>size around a clock</small></span></button>
-  </div>
-  <p class="modedesc" id="modedesc"></p>
-  <div class="transport">
-    <button id="play"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 3v10l8-5z" fill="currentColor" stroke="none"/></svg>Play all</button>
-    <button id="pause"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 3h3v10H4zM9 3h3v10H9z" fill="currentColor" stroke="none"/></svg>Pause all</button>
-    <button id="restart"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.5v3h3"/></svg>Restart</button>
-    <span class="sep" aria-hidden="true"></span>
-    <label class="speed">speed <input id="speed" type="range" min="1" max="60" value="12" aria-label="steps per second"> <span id="spd">12 steps/s</span></label>
-  </div>
-</div>
-<div class="tabs" role="tablist">
-  <button role="tab" aria-selected="false" data-size="2"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.10" y="3.10" width="7.80" height="7.80" rx="1.50"/><rect x="13.10" y="3.10" width="7.80" height="7.80" rx="1.50"/><rect x="3.10" y="13.10" width="7.80" height="7.80" rx="1.50"/><rect x="13.10" y="13.10" width="7.80" height="7.80" rx="1.50"/></svg>Size 2</button>
-  <button role="tab" aria-selected="true" data-size="3"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.73" y="2.73" width="5.20" height="5.20" rx="1.00"/><rect x="9.40" y="2.73" width="5.20" height="5.20" rx="1.00"/><rect x="16.07" y="2.73" width="5.20" height="5.20" rx="1.00"/><rect x="2.73" y="9.40" width="5.20" height="5.20" rx="1.00"/><rect x="9.40" y="9.40" width="5.20" height="5.20" rx="1.00"/><rect x="16.07" y="9.40" width="5.20" height="5.20" rx="1.00"/><rect x="2.73" y="16.07" width="5.20" height="5.20" rx="1.00"/><rect x="9.40" y="16.07" width="5.20" height="5.20" rx="1.00"/><rect x="16.07" y="16.07" width="5.20" height="5.20" rx="1.00"/></svg>Size 3</button>
-  <button role="tab" aria-selected="false" data-size="4"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.55" y="2.55" width="3.90" height="3.90" rx="0.75"/><rect x="7.55" y="2.55" width="3.90" height="3.90" rx="0.75"/><rect x="12.55" y="2.55" width="3.90" height="3.90" rx="0.75"/><rect x="17.55" y="2.55" width="3.90" height="3.90" rx="0.75"/><rect x="2.55" y="7.55" width="3.90" height="3.90" rx="0.75"/><rect x="7.55" y="7.55" width="3.90" height="3.90" rx="0.75"/><rect x="12.55" y="7.55" width="3.90" height="3.90" rx="0.75"/><rect x="17.55" y="7.55" width="3.90" height="3.90" rx="0.75"/><rect x="2.55" y="12.55" width="3.90" height="3.90" rx="0.75"/><rect x="7.55" y="12.55" width="3.90" height="3.90" rx="0.75"/><rect x="12.55" y="12.55" width="3.90" height="3.90" rx="0.75"/><rect x="17.55" y="12.55" width="3.90" height="3.90" rx="0.75"/><rect x="2.55" y="17.55" width="3.90" height="3.90" rx="0.75"/><rect x="7.55" y="17.55" width="3.90" height="3.90" rx="0.75"/><rect x="12.55" y="17.55" width="3.90" height="3.90" rx="0.75"/><rect x="17.55" y="17.55" width="3.90" height="3.90" rx="0.75"/></svg>Size 4</button>
-</div>
-<div id="page"></div>
-</div>
-<script>
 
+/* ---------- your universe ---------- */
+.lab{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;margin-top:36px;align-items:start}
+@media (max-width:900px){.lab{grid-template-columns:1fr;gap:18px}}
+.lab .card{padding:16px}
+.form{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+.form label{display:block;font-size:13px;color:var(--ink-3);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px}
+.sizes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:16px}
+.sizes button{font:500 15px var(--sans);padding:10px 6px;border:1px solid var(--edge);border-radius:10px;background:var(--card);color:var(--ink-2);cursor:pointer}
+.sizes button[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.idx{display:flex;gap:8px}
+.idx input{flex:1;min-width:0;font:500 20px var(--mono);padding:11px 14px;border:1px solid var(--edge);border-radius:10px;background:var(--paper);color:var(--ink)}
+.idx input:focus{border-color:var(--fixed);outline:none;box-shadow:0 0 0 3px rgba(47,85,212,.15)}
+.range{font-size:12.5px;color:var(--ink-3);margin:6px 0 0;font-family:var(--mono)}
+.err{color:var(--spiral);font-size:14px;margin:6px 0 0;min-height:1.2em}
+.row-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.presets button{font:13px var(--sans);padding:7px 12px;border:1px dashed var(--grid-major);border-radius:999px;background:var(--paper);color:var(--ink-2);cursor:pointer}
+.presets button:hover{border-color:var(--ink-3);color:var(--ink)}
+.verdict{margin-top:18px;border-top:1px dashed var(--edge);padding-top:16px}
+.verdict .fatebig{font-family:var(--serif);font-size:34px;line-height:1;color:var(--c)}
+.verdict p{margin:8px 0 0;color:var(--ink-2);font-size:15px}
+.rows{display:grid;grid-template-columns:auto 1fr 1fr;gap:4px 14px;font-family:var(--mono);font-size:13.5px;margin-top:14px;align-items:center;overflow-x:auto}
+.rows .h{color:var(--ink-3);font-size:12px}
+.rows .f{font-family:var(--math);font-style:italic;color:var(--ink-3)}
+.rows .p{color:var(--cycle)}.rows .n{color:var(--spiral)}
+
+/* ---------- engineering ---------- */
+.eng{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:40px}
+@media (max-width:980px){.eng{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.eng{grid-template-columns:1fr}}
+.ecard{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:18px 18px 16px;box-shadow:var(--shadow);position:relative}
+.ecard .hand{font-size:24px;color:var(--spiral);margin-bottom:2px}
+.ecard h3{font-family:var(--serif);font-weight:500;font-size:22px;margin:0 0 8px;line-height:1.2}
+.ecard p{margin:0;color:var(--ink-2);font-size:14.5px}
+.ecard .math{font-size:17px;color:var(--ink)}
+.ecard.wide{grid-column:span 2}
+@media (max-width:640px){.ecard.wide{grid-column:auto}}
+.pbars{margin-top:14px;display:grid;gap:10px}
+.pbar{display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr);gap:4px 12px;align-items:center;font-size:14px;color:var(--ink-2)}
+.pbar .track{display:flex;align-items:center;gap:8px}
+.pbar .fill{height:22px;border-radius:4px;transform:scaleX(0);transform-origin:0 50%;transition:transform 1.4s cubic-bezier(.2,.8,.2,1)}
+.ecard.in .pbar .fill{transform:none}
+.pbar b{font:500 14px var(--mono);color:var(--ink);white-space:nowrap}
+@media (max-width:520px){.pbar{grid-template-columns:1fr}}
+.term{background:#1D2433;color:#E8ECF3;border-radius:12px;padding:16px 18px;font:13.5px/1.7 var(--mono);overflow-x:auto;margin-top:16px;box-shadow:var(--shadow);white-space:pre}
+.term .c{color:#8C99AE}
+.term .p{color:#7FD1C4}
+
+/* ---------- theory ---------- */
+.theory{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:40px;margin-top:40px;align-items:start}
+@media (max-width:900px){.theory{grid-template-columns:1fr;gap:20px}}
+.returnmap{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:22px;box-shadow:var(--shadow)}
+.returnmap .big{font-family:var(--math);font-size:clamp(26px,3vw,34px);text-align:center;margin:8px 0 16px}
+.returnmap table{width:100%;border-collapse:collapse;font-size:15px}
+.returnmap td{padding:9px 6px;border-top:1px dashed var(--edge);vertical-align:top}
+.returnmap td:first-child{font-family:var(--math);font-size:17px;white-space:nowrap;width:34%}
+@media (max-width:520px){.returnmap td{display:block;width:auto!important;padding:4px 0}.returnmap td:first-child{padding-top:10px}.returnmap td+td{border-top:none}}
+.refs{display:grid;gap:12px}
+.ref{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.ref b{font-family:var(--serif);font-weight:500;font-size:18px;display:block}
+.ref span{font-size:14px;color:var(--ink-2)}
+.ref cite{display:block;font-style:normal;font-size:12.5px;color:var(--ink-3);margin-top:4px}
+
+footer{max-width:var(--sheet);margin:0 auto;padding:90px var(--gutter) calc(60px + env(safe-area-inset-bottom));text-align:center}
+footer .sig{font-family:var(--hand);font-size:30px;color:var(--pencil)}
+footer p{color:var(--ink-3);font-size:14px}
+
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  .reveal,.fate{opacity:1!important;transform:none!important;transition:none}
+  .cbar,.pbar .fill{transform:none!important;transition:none}
+  .scroll-cue{animation:none}
+  .step{opacity:1}
+}
+</style>
+</head>
+<body>
+<div class="paper" id="paper" aria-hidden="true"></div>
+<div class="margin-line" aria-hidden="true"></div>
+
+<nav class="nav" id="nav" aria-label="sections">
+  <div class="in">
+    <a class="brand" href="#top"><svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 16l6-9 4 11-12 6-7-8 9-8" fill="none" stroke="#2F55D4" stroke-width="2.4" stroke-linejoin="round"/><circle cx="16" cy="16" r="2.6" fill="#1D2433"/></svg>Dynamics <i>Engine</i></a>
+    <ul>
+      <li><a href="#rule">The rule</a></li>
+      <li><a href="#fates">Five fates</a></li>
+      <li><a href="#census">Census</a></li>
+      <li><a href="#explorer">Explorer</a></li>
+      <li><a href="#yours">Try one</a></li>
+      <li><a href="#engineering">Engineering</a></li>
+      <li><a href="#theory">Theory</a></li>
+    </ul>
+    <a class="gh" href="https://github.com/mukos/dynamics-engine"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>Source</a>
+  </div>
+  <div class="progress" id="progress"></div>
+</nav>
+
+<header class="hero" id="top">
+  <div id="rosettes" aria-hidden="true"></div>
+  <div class="hero-copy" id="heroCopy">
+    <div class="kicker">discrete dynamical systems · exact classification · Rust</div>
+    <h1>Dynamics <i>Engine</i></h1>
+    <div class="equation" role="img" aria-label="v of t plus 1 equals v of t plus d of sign of v of t">
+      <span class="v">v</span>(<span class="v">t</span> + 1) <span class="op">=</span> <span class="v">v</span>(<span class="v">t</span>) <span class="op">+</span> <span class="v">d</span>(sign <span class="v">v</span>(<span class="v">t</span>))
+      <span class="note"><svg viewBox="0 0 52 40" aria-hidden="true"><path d="M44 14C32 8 16 8 4 16M4 16l9-7M4 16l10 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>the whole universe</span>
+    </div>
+    <p class="lede">A universe is a small integer matrix. Its state moves by a velocity that depends only on the <b>signs</b> of its coordinates. This engine decides, exactly, where every one of the <b>387,420,489</b> three-element universes ends up.</p>
+    <div class="cta">
+      <a class="btn primary" href="#fates">See the five fates <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3.5 8.5 8 13l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      <a class="btn ghost" href="#yours">Try your own number</a>
+    </div>
+    <div class="hero-stats">
+      <div><b data-count="387420489">0</b><span>universes at N = 3</span></div>
+      <div><b data-count="6.6" data-dec="1" data-suffix=" s">0</b><span>for the full census</span></div>
+      <div><b data-count="5">0</b><span>possible fates</span></div>
+      <div><b data-count="0">0</b><span>runtime dependencies</span></div>
+    </div>
+  </div>
+  <div class="scroll-cue" aria-hidden="true">scroll<svg width="18" height="26" viewBox="0 0 18 26"><path d="M9 2c-1 7 1 13 0 21M3 17l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+</header>
+
+<main>
+<!-- §1 ---------------------------------------------------------------- -->
+<section class="sec" id="rule">
+  <span class="sec-no">§1</span>
+  <p class="eyebrow reveal">The model</p>
+  <h2 class="reveal">One <i>rule</i>, every universe<svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 10C80 3 160 13 240 7s110 3 152 1"/></svg></h2>
+  <p class="sub reveal">Scroll through how a matrix of zeros and ones becomes a piecewise-constant vector field, and why that makes every orbit a chain of straight segments.</p>
+  <div class="story">
+    <div class="steps">
+      <div class="step" data-step="0"><div>
+        <h3>A universe is a matrix</h3>
+        <p>Each of the <span class="mi">N</span> elements has a positive and a negative channel. A <span class="mi">2N × 2N</span> matrix of zeros and ones says which channels feed which. This is universe 613 at <span class="mi">N</span> = 2.</p>
+        <span class="hand">16 bits · 65,536 such universes</span>
+      </div></div>
+      <div class="step" data-step="1"><div>
+        <h3>Only differences matter</h3>
+        <p>A channel pushing both the positive and the negative side of an element cancels out. Each pair of bits collapses to one value in {−1, 0, +1}, giving two small drift tables.</p>
+        <div class="formula">2<sup>4N²</sup> matrices  →  3<sup>2N²</sup> universes</div>
+        <p>At <span class="mi">N</span> = 3 that is 177× less work, before any symmetry.</p>
+      </div></div>
+      <div class="step" data-step="2"><div>
+        <h3>Signs choose the velocity</h3>
+        <p>Inside a quadrant every coordinate keeps its sign, so the same rows fire every step and the velocity is constant. The plane splits into regions with one arrow each.</p>
+        <div class="formula"><i>d</i>(<i>s</i>) = Σ<sub><i>s<sub>f</sub></i> = +</sub> <i>d</i><sup>+</sup><sub><i>f</i></sub> + Σ<sub><i>s<sub>f</sub></i> = −</sub> <i>d</i><sup>−</sup><sub><i>f</i></sub></div>
+      </div></div>
+      <div class="step" data-step="3"><div>
+        <h3>So orbits are polygons</h3>
+        <p>From the zero state, every channel fires once. After that the state slides straight until a coordinate crosses zero, then turns. Universe 613 wanders for 4 steps, then repeats a 10-step loop forever.</p>
+        <span class="hand">a cycle of period 10, proven by a repeated state</span>
+      </div></div>
+    </div>
+    <div class="figure"><div class="board"><svg id="storySvg" viewBox="0 0 520 520" role="img" aria-label="universe 613: matrix, drift tables, vector field and orbit"></svg><div class="cap" id="storyCap"></div></div></div>
+  </div>
+</section>
+
+<!-- §2 ---------------------------------------------------------------- -->
+<section class="sec" id="fates">
+  <span class="sec-no">§2</span>
+  <p class="eyebrow reveal">Live, from the zero state</p>
+  <h2 class="reveal">Five <i>fates</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 9C90 14 170 4 250 9s100-2 142 0"/></svg></h2>
+  <p class="sub reveal">Every orbit ends in one of five ways. Four come with a certificate the engine checks exactly; the fifth is the honest remainder, recognised from growth it cannot yet prove. Each card is a real three-element universe, simulated in your browser.</p>
+  <div class="fates" id="fatesRow" aria-label="the five fates"></div>
+  <div class="swipe" aria-hidden="true">swipe for all five →</div>
+  <div class="viewbar reveal">
+    <div class="views" role="group" aria-label="view">
+      <button id="mode-portrait" aria-pressed="true"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5v13M1.5 8h13" opacity=".45"/><path d="M4.5 11.5 3.5 6 8 3.5l4.5 2.5-1 5.5z"/><circle cx="4.5" cy="11.5" r="1.3" fill="currentColor"/></svg><span><b>Portrait</b><small>state in the plane</small></span></button>
+      <button id="mode-waves" aria-pressed="false"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8h13" opacity=".45"/><path d="M1.5 8C3 3 5 3 6.5 8S10 13 11.5 8 13.5 4.5 14.5 6"/></svg><span><b>Waves</b><small>coordinates over time</small></span></button>
+      <button id="mode-radial" aria-pressed="false"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" opacity=".45"/><path d="M8 8c0-1 1.6-1.4 2.2-.3.8 1.4-.4 3-2.2 3S4.7 9 5 7.2C5.4 4.8 8 3.8 10 4.6s3 3 2.6 5"/></svg><span><b>Radial</b><small>size around a clock</small></span></button>
+    </div>
+    <p class="modedesc" id="modedesc"></p>
+    <div class="transport">
+      <button id="play"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 3v10l8-5z" fill="currentColor" stroke="none"/></svg>Play all</button>
+      <button id="pause"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 3h3v10H4zM9 3h3v10H9z" fill="currentColor" stroke="none"/></svg>Pause all</button>
+      <button id="restart"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.5v3h3"/></svg>Restart</button>
+      <span class="sep" aria-hidden="true"></span>
+      <label class="speed">speed <input id="speed" type="range" min="1" max="60" value="12" aria-label="steps per second"> <span id="spd">12 steps/s</span></label>
+    </div>
+  </div>
+</section>
+
+<!-- §3 ---------------------------------------------------------------- -->
+<section class="sec" id="census">
+  <span class="sec-no">§3</span>
+  <p class="eyebrow reveal">Exhaustive where possible, sampled where not</p>
+  <h2 class="reveal">The <i>census</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 8C70 3 150 13 230 8s120-4 162 2"/></svg></h2>
+  <p class="sub reveal">Every universe started from zero, classified by its fate. Escape dominates and grows with size; the rare fates are where the structure lives.</p>
+  <div class="census-wrap">
+    <div class="chart reveal" id="censusChart">
+      <div class="legend" id="censusLegend"></div>
+      <div id="censusBars"></div>
+      <div class="tip" id="tip"></div>
+    </div>
+    <div class="facts">
+      <div class="fact reveal d1"><b data-count="0">0</b><span>undecided universes at <span class="mi">N</span> = 3: every one of 387,420,489 receives a fate</span></div>
+      <div class="fact reveal d2"><b data-count="8093160">0</b><span>symmetry classes at <span class="mi">N</span> = 3, under signed permutations of the elements (order <span class="math">2<sup><i>N</i></sup><i>N</i>!</span>)</span></div>
+      <div class="fact reveal d3"><b data-count="1510">0</b><span>steps in the longest cycle at <span class="mi">N</span> = 3, reached from the zero state</span></div>
+      <div class="fact reveal d4"><b data-count="59" data-suffix=" M/s">0</b><span>universes per second for the sampled <span class="mi">N</span> = 4 census, where exhaustive search would take about a year</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- §4 ---------------------------------------------------------------- -->
+<section class="sec" id="explorer">
+  <span class="sec-no">§4</span>
+  <p class="eyebrow reveal">Typical and rarest, by size</p>
+  <h2 class="reveal">The <i>explorer</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 10C90 4 180 12 260 7s96 2 132 0"/></svg></h2>
+  <p class="sub reveal">Within each fate the census records a finer class: the period, or the step at which the certificate arrived. Here are the most common class and the rarest ones, each shown by the universe with the smallest index.</p>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="false" data-size="2"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.1" y="3.1" width="7.8" height="7.8" rx="1.5"/><rect x="13.1" y="3.1" width="7.8" height="7.8" rx="1.5"/><rect x="3.1" y="13.1" width="7.8" height="7.8" rx="1.5"/><rect x="13.1" y="13.1" width="7.8" height="7.8" rx="1.5"/></svg>Size 2</button>
+    <button role="tab" aria-selected="true" data-size="3"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.7" y="2.7" width="5.2" height="5.2" rx="1"/><rect x="9.4" y="2.7" width="5.2" height="5.2" rx="1"/><rect x="16.1" y="2.7" width="5.2" height="5.2" rx="1"/><rect x="2.7" y="9.4" width="5.2" height="5.2" rx="1"/><rect x="9.4" y="9.4" width="5.2" height="5.2" rx="1"/><rect x="16.1" y="9.4" width="5.2" height="5.2" rx="1"/><rect x="2.7" y="16.1" width="5.2" height="5.2" rx="1"/><rect x="9.4" y="16.1" width="5.2" height="5.2" rx="1"/><rect x="16.1" y="16.1" width="5.2" height="5.2" rx="1"/></svg>Size 3</button>
+    <button role="tab" aria-selected="false" data-size="4"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="3.9" height="3.9" rx=".75"/><rect x="7.5" y="2.5" width="3.9" height="3.9" rx=".75"/><rect x="12.5" y="2.5" width="3.9" height="3.9" rx=".75"/><rect x="17.5" y="2.5" width="3.9" height="3.9" rx=".75"/><rect x="2.5" y="7.5" width="3.9" height="3.9" rx=".75"/><rect x="7.5" y="7.5" width="3.9" height="3.9" rx=".75"/><rect x="12.5" y="7.5" width="3.9" height="3.9" rx=".75"/><rect x="17.5" y="7.5" width="3.9" height="3.9" rx=".75"/><rect x="2.5" y="12.5" width="3.9" height="3.9" rx=".75"/><rect x="7.5" y="12.5" width="3.9" height="3.9" rx=".75"/><rect x="12.5" y="12.5" width="3.9" height="3.9" rx=".75"/><rect x="17.5" y="12.5" width="3.9" height="3.9" rx=".75"/><rect x="2.5" y="17.5" width="3.9" height="3.9" rx=".75"/><rect x="7.5" y="17.5" width="3.9" height="3.9" rx=".75"/><rect x="12.5" y="17.5" width="3.9" height="3.9" rx=".75"/><rect x="17.5" y="17.5" width="3.9" height="3.9" rx=".75"/></svg>Size 4</button>
+  </div>
+  <div id="page"></div>
+</section>
+
+<!-- §5 ---------------------------------------------------------------- -->
+<section class="sec" id="yours">
+  <span class="sec-no">§5</span>
+  <p class="eyebrow reveal">Pick any universe</p>
+  <h2 class="reveal">Try <i>your</i> number<svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 9C80 4 170 13 250 8s104-3 142 1"/></svg></h2>
+  <p class="sub reveal">Every universe has an index: its drift tables read as one number in base 3. Type any index, and your browser decodes it, runs it from zero and decides its fate with the same certificates the engine uses.</p>
+  <div class="lab">
+    <div class="card" id="pgCard">
+      <div class="top"><div><span class="chip" id="pgChip" style="--c:var(--ink-3)">universe</span><div class="klass" id="pgKlass">pick a number</div></div></div>
+      <div class="stage"><canvas width="720" height="720" role="img" aria-label="your universe"></canvas>
+        <button class="playbtn" aria-label="Play" title="Play / pause" aria-pressed="false"></button></div>
+      <div class="meta"><span id="pgMeta"></span><span id="pgAxes"></span></div>
+    </div>
+    <form class="form reveal" id="pgForm" autocomplete="off">
+      <label>Size</label>
+      <div class="sizes" role="group" aria-label="size">
+        <button type="button" data-n="2" aria-pressed="false">N = 2</button>
+        <button type="button" data-n="3" aria-pressed="true">N = 3</button>
+        <button type="button" data-n="4" aria-pressed="false">N = 4</button>
+      </div>
+      <label for="pgIndex">Universe index</label>
+      <div class="idx">
+        <input id="pgIndex" inputmode="numeric" pattern="[0-9]*" value="27411247" aria-describedby="pgRange pgErr">
+        <button class="btn primary" type="submit">Run</button>
+      </div>
+      <p class="range" id="pgRange"></p>
+      <p class="err" id="pgErr" role="alert"></p>
+      <div class="row-btns"><button class="btn ghost" type="button" id="pgRandom">Random universe</button><button class="btn ghost" type="button" id="pgShare">Copy link</button></div>
+      <div class="presets" id="pgPresets"></div>
+      <div class="verdict" id="pgVerdict"></div>
+    </form>
+  </div>
+</section>
+
+<!-- §6 ---------------------------------------------------------------- -->
+<section class="sec" id="engineering">
+  <span class="sec-no">§6</span>
+  <p class="eyebrow reveal">How it is built</p>
+  <h2 class="reveal">The <i>engineering</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 9C80 13 160 3 240 8s112 1 152-1"/></svg></h2>
+  <p class="sub reveal">A dependency-free Rust codebase that turns an exponential search into seconds: reduce the space, prove instead of simulate, and keep the hot loop out of the allocator's way.</p>
+  <div class="eng">
+    <div class="ecard reveal d1"><div class="hand">exact, not simulated</div><h3>Event-driven certificates</h3><p>The analyser jumps from one sign change to the next instead of stepping. A repeated state proves a cycle; a quadrant the velocity cannot leave proves a ray; a replayed segment <span class="math"><i>v</i>(<i>t</i>+<i>T</i>) = <i>v</i>(<i>t</i>) + <i>D</i></span> proves a helix.</p></div>
+    <div class="ecard reveal d2"><div class="hand">symmetry</div><h3>Canonical forms</h3><p>Fates are invariant under the hyperoctahedral group of signed permutations. Burnside's lemma counts the orbits: 873 classes at <span class="mi">N</span> = 2, 8,093,160 at <span class="mi">N</span> = 3.</p></div>
+    <div class="ecard reveal d3"><div class="hand">reduction</div><h3>From bits to ternary rows</h3><p>Only differences between paired channels matter, so <span class="math">2<sup>4<i>N</i>²</sup></span> bit matrices collapse to <span class="math">3<sup>2<i>N</i>²</sup></span> universes, each carrying a multiplicity of <span class="math">2<sup>zeros</sup></span>.</p></div>
+    <div class="ecard wide reveal d1" id="perfCard"><div class="hand">performance</div><h3>Out of the allocator's way</h3><p>Static musl builds serialise threads on <code>malloc</code>. Reusing one workspace per thread and walking indices with an odometer removed every allocation from the hot loop. Size-3 census on 8 cores:</p>
+      <div class="pbars">
+        <div class="pbar"><span>first Rust version</span><span class="track"><span class="fill" style="width:calc(100% - 64px);background:var(--axis)"></span><b>527 s</b></span></div>
+        <div class="pbar"><span>allocation-free loop</span><span class="track"><span class="fill" style="width:max(6px,calc((100% - 64px) * 6.6 / 527));background:var(--cycle)"></span><b>6.6 s</b></span></div>
+      </div>
+      <div class="hand" style="font-size:20px;margin-top:6px">80× faster, same answers</div></div>
+    <div class="ecard reveal d2"><div class="hand">verified</div><h3>Tests that pin the maths</h3><p>Certificates are checked against brute-force simulation, the index odometer against decoding, and the original TypeScript histogram is kept as a regression test.</p></div>
+  </div>
+  <pre class="term reveal" aria-label="commands"><span class="c"># every three-element universe, exactly, in about seven seconds</span>
+<span class="p">$</span> cargo run --release -- exact --size 3
+<span class="c"># two billion four-element universes, sampled with a fixed seed</span>
+<span class="p">$</span> cargo run --release -- exact --size 4 --samples 2000000000
+<span class="c"># replay one universe event by event</span>
+<span class="p">$</span> cargo run --release -- show --size 3 --index 27411247</pre>
+</section>
+
+<!-- §7 ---------------------------------------------------------------- -->
+<section class="sec" id="theory">
+  <span class="sec-no">§7</span>
+  <p class="eyebrow reveal">Where this sits in dynamical systems</p>
+  <h2 class="reveal">The <i>theory</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 8C90 12 170 3 250 8s100 2 142-1"/></svg></h2>
+  <p class="sub reveal">Locally the system is trivial: a straight line. Globally it is as hard as computation itself. The interesting mathematics is in between, on the loops.</p>
+  <div class="theory">
+    <div class="returnmap reveal">
+      <div class="hand">around one loop of quadrants, the return map is affine</div>
+      <div class="big"><i>x</i> ↦ <i>A</i><i>x</i> + <i>b</i></div>
+      <table>
+        <tr><td><i>A</i> = <i>I</i>, <i>b</i> = 0</td><td>the state comes back exactly: a <b style="color:var(--cycle)">cycle</b></td></tr>
+        <tr><td><i>A</i> = <i>I</i>, <i>b</i> ≠ 0</td><td>it comes back shifted by the same vector: a <b style="color:var(--helix)">helix</b></td></tr>
+        <tr><td>ρ(<i>A</i>) &gt; 1</td><td>each return is larger, like <i>x</i> ↦ 2<i>x</i> + 13: a <b style="color:var(--spiral)">spiral</b></td></tr>
+        <tr><td>no loop at all</td><td>a quadrant it never leaves: a <b style="color:var(--ray)">ray</b>; zero velocity: <b style="color:var(--fixed)">fixed</b></td></tr>
+      </table>
+    </div>
+    <div class="refs">
+      <div class="ref reveal d1"><b>Piecewise-constant derivatives</b><span>The continuous cousin. Reachability is decidable in two dimensions and undecidable from three, so no closed formula can predict every fate. That is why spirals stay empirical.</span><cite>Asarin, Maler, Pnueli · Theoretical Computer Science 138 (1995)</cite></div>
+      <div class="ref reveal d2"><b>Glass networks</b><span>Piecewise-linear gene-regulation models whose vector field depends only on which side of thresholds each variable lies: the same sign-decides-velocity structure, with decay.</span><cite>Glass, Kauffman (1973)</cite></div>
+      <div class="ref reveal d3"><b>Karp–Miller coverability</b><span>The helix certificate is the deterministic analogue of the coverability argument for vector addition systems: a repeated pattern with a gain that keeps every sign repeats forever.</span><cite>Karp, Miller (1969)</cite></div>
+      <div class="ref reveal d4"><b>Basins of attraction</b><span>Started away from zero, the basin maps fall into three families: sectors (55 % of two-element universes), stripes from conserved linear functionals (40 %), and parity checkerboards (1 %).</span><cite>computed by this engine</cite></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="sig">q.e.d.</div>
+  <p>Dynamics Engine · Rust, no dependencies · <a href="https://github.com/mukos/dynamics-engine">github.com/mukos/dynamics-engine</a></p>
+  <!-- Basin Atlas link hidden for now. -->
+  <p hidden><a href="basin-atlas.html">Basin Atlas</a></p>
+</footer>
+
+<script>
 const DATA = __DATA__;
 const LEGEND = __LEGEND__;
+const HERO = __HERO__;
 const COLORS = {fixed:"--fixed", cycle:"--cycle", ray:"--ray", helix:"--helix", spiral:"--spiral"};
 const ORDER = ["fixed","cycle","ray","helix","spiral"];
-const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const CSS_CACHE = {};
+const css = n => CSS_CACHE[n] || (CSS_CACHE[n] = getComputedStyle(document.documentElement).getPropertyValue(n).trim());
 const fmt = n => n.toLocaleString("en-US");
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const MOBILE = matchMedia("(max-width: 640px)").matches;
 
 // ---- model ------------------------------------------------------------
 function drift(u, v){
@@ -170,7 +596,7 @@ function drift(u, v){
 }
 function makeRun(u, start, kind){
   const zero = new Array(u.pos.length).fill(0);
-  return {u, kind, v: zero.slice(), path:[zero], done:false, steps:0, allFire:true, color: css(COLORS[kind])};
+  return {u, kind, v: zero.slice(), path:[zero], done:false, steps:0, allFire:true, color: css(COLORS[kind] || "--ink-3")};
 }
 function fireAll(u){
   const N = u.pos.length, d = new Array(N).fill(0);
@@ -186,6 +612,255 @@ function stepRun(r){
   r.path.push(r.v.slice()); r.steps++;
   if (r.path.length > 4000) r.path.shift();
 }
+// An index is the drift tables read as base-3 digits, most significant first: d⁺ rows, then d⁻ rows.
+function decodeRows(index, N){
+  let x = BigInt(index); const digits = [];
+  for (let i = 0; i < 2*N*N; i++){ digits.push(Number(x % 3n) - 1); x /= 3n; }
+  digits.reverse();
+  const pos = [], neg = [];
+  for (let f = 0; f < N; f++) pos.push(digits.slice(f*N, f*N+N));
+  for (let f = 0; f < N; f++) neg.push(digits.slice(N*N + f*N, N*N + f*N + N));
+  return {pos, neg};
+}
+const gcd = (a, b) => b ? gcd(b, a % b) : a;
+const lcm = (a, b) => a / gcd(a, b) * b;
+
+// ---- hero: rosettes, each a real universe drawn in polar form ----------
+// angle = 2π t / REV, radius = ‖v(t)‖. Cycles close into stars, growing fates into spirals.
+(function hero(){
+  const host = document.getElementById("rosettes");
+  const SLOTS = MOBILE ? [
+    {x:.10, y:.16, R:150, depth:.3, alpha:.8, lw:1.5},
+    {x:.92, y:.30, R:130, depth:.45, alpha:.8, lw:1.5},
+    {x:.88, y:.88, R:170, depth:.18, alpha:.75, lw:1.4},
+    {x:.12, y:.80, R:120, depth:.55, alpha:.85, lw:1.5},
+    {x:.50, y:.48, R:300, depth:.06, alpha:.2, lw:1.1},
+  ] : [
+    {x:.13, y:.30, R:230, depth:.22, alpha:.75, lw:1.5},
+    {x:.88, y:.25, R:200, depth:.38, alpha:.8, lw:1.5},
+    {x:.84, y:.80, R:270, depth:.14, alpha:.7, lw:1.4},
+    {x:.15, y:.84, R:165, depth:.5, alpha:.85, lw:1.6},
+    {x:.50, y:.50, R:430, depth:.06, alpha:.22, lw:1.2},
+    {x:.66, y:.10, R:92, depth:.75, alpha:.9, lw:1.6},
+    {x:.32, y:.07, R:76, depth:.9, alpha:.9, lw:1.6},
+  ];
+  const REVS = [37, 41, 43, 47, 53, 59, 61];
+  const dpr = Math.min(1.5, window.devicePixelRatio || 1);
+  const pool = HERO.slice();
+  for (let i = pool.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  let next = 0;
+  function series(cl){
+    const r = makeRun(cl, new Array(cl.pos.length).fill(0), cl.kind);
+    const norms = [0], seen = new Map();
+    let first = -1, period = 0;
+    for (let t = 1; t <= 2400; t++){
+      stepRun(r); if (r.done) break;
+      norms.push(Math.hypot(...r.v));
+      if (cl.kind === "cycle" && first < 0){ const k = r.v.join(","), f = seen.get(k); if (f !== undefined){ first = f; period = t - f; } else seen.set(k, t); }
+    }
+    return {norms, first, period};
+  }
+  function prepare(cl){
+    const s = series(cl);
+    const REV = REVS[Math.floor(Math.random() * REVS.length)];
+    const end = cl.kind === "cycle" && s.period ? Math.min(s.norms.length - 1, s.first + lcm(s.period, REV))
+                                                : Math.min(s.norms.length - 1, cl.kind === "spiral" ? 900 : 640);
+    const growing = cl.kind !== "cycle";
+    let nmax = 1e-9; for (let t = 0; t <= end; t++) nmax = Math.max(nmax, s.norms[t]);
+    const rad = n => growing ? .1 + .9 * Math.sqrt(n / nmax) : .22 + .78 * n / nmax;
+    const label = cl.kind === "cycle" ? `cycle · period ${s.period}` : cl.kind === "helix" ? `helix · period ${cl.param}` : cl.kind === "spiral" ? "spiral · returns grow" : "ray · escapes";
+    return {cl, norms: s.norms, end, REV, rad, phase: Math.random() * Math.PI * 2, t: 0, label};
+  }
+  const items = SLOTS.map(slot => {
+    const el = document.createElement("div"); el.className = "rosette";
+    const px = Math.round(slot.R * 2 * dpr);
+    el.innerHTML = `<canvas width="${px}" height="${px}"></canvas><span class="tag"></span>`;
+    host.appendChild(el);
+    const it = {slot, el, cv: el.querySelector("canvas"), tag: el.querySelector(".tag"), job: null, hold: 0, fading: false, delay: 0};
+    it.ctx = it.cv.getContext("2d"); it.ctx.scale(dpr, dpr);
+    return it;
+  });
+  function layout(){
+    const w = host.parentElement.clientWidth, h = host.parentElement.clientHeight;
+    const k = MOBILE ? 1 : Math.min(1, Math.max(.55, w / 1400));
+    for (const it of items){
+      const R = it.slot.R * k;
+      Object.assign(it.el.style, {width: `${2*R}px`, height: `${2*R}px`, left: `${it.slot.x*w - R}px`, top: `${it.slot.y*h - R}px`});
+      it.tag.style.display = MOBILE || it.slot.R < 120 || it.slot.alpha < .3 ? "none" : "";
+    }
+  }
+  function start(it){
+    const cl = pool[next++ % pool.length];
+    it.job = prepare(cl);
+    const s = it.slot.R;
+    it.ctx.clearRect(0, 0, 2*s, 2*s);
+    it.ctx.strokeStyle = css(COLORS[cl.kind]); it.ctx.lineWidth = it.slot.lw; it.ctx.lineJoin = "round"; it.ctx.lineCap = "round";
+    it.ctx.globalAlpha = it.slot.alpha;
+    it.tag.textContent = it.job.label;
+    it.el.classList.remove("done"); it.el.style.opacity = 1; it.hold = 0; it.fading = false;
+    if (REDUCED){ drawTo(it, it.job.end); it.el.classList.add("done"); }
+  }
+  function point(it, t){
+    const j = it.job, s = it.slot.R, a = 2*Math.PI*t/j.REV + j.phase, r = (s - 4) * j.rad(j.norms[t]);
+    return [s + Math.cos(a) * r, s + Math.sin(a) * r];
+  }
+  function drawTo(it, upto){
+    const j = it.job, ctx = it.ctx;
+    upto = Math.min(upto, j.end);
+    if (upto <= j.t) return;
+    ctx.beginPath();
+    const [px, py] = point(it, j.t); ctx.moveTo(px, py);
+    for (let t = j.t + 1; t <= upto; t++){ const [x, y] = point(it, t); ctx.lineTo(x, y); }
+    ctx.stroke();
+    j.t = upto;
+  }
+  items.forEach((it, i) => { start(it); it.delay = i * 18; });
+  layout(); addEventListener("resize", layout);
+  // parallax: scroll moves each layer by its depth; the pointer tilts them slightly
+  let mx = 0, my = 0, heroVisible = true;
+  addEventListener("pointermove", e => { if (e.pointerType === "mouse"){ mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; } }, {passive: true});
+  new IntersectionObserver(es => { heroVisible = es[0].isIntersecting; }).observe(host.parentElement);
+  const copy = document.getElementById("heroCopy");
+  function tick(){
+    if (heroVisible){
+      const sy = scrollY;
+      for (const it of items){
+        const d = it.slot.depth, tx = REDUCED ? 0 : -mx * 40 * d, ty = REDUCED ? 0 : sy * (d - .35) * .9 - my * 30 * d;
+        it.el.style.transform = `translate3d(${tx.toFixed(1)}px,${ty.toFixed(1)}px,0)`;
+        if (REDUCED) continue;
+        if (it.delay > 0){ it.delay--; continue; }
+        if (it.job.t < it.job.end){ drawTo(it, it.job.t + (it.slot.R > 280 ? 3 : 2)); if (it.job.t >= it.job.end) it.el.classList.add("done"); }
+        else if (!it.fading && ++it.hold > 260){ it.fading = true; it.el.style.opacity = 0; setTimeout(() => start(it), 1500); }
+      }
+      if (!REDUCED) copy.style.transform = `translate3d(0,${(sy * .28).toFixed(1)}px,0)`;
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+
+// ---- page chrome: nav, progress, graph-paper parallax, reveals, counters ----
+(function chrome(){
+  const nav = document.getElementById("nav"), bar = document.getElementById("progress"), paper = document.getElementById("paper");
+  const links = [...document.querySelectorAll(".nav ul a")];
+  const secs = links.map(a => document.querySelector(a.getAttribute("href")));
+  let ticking = false;
+  function onScroll(){
+    if (ticking) return; ticking = true;
+    requestAnimationFrame(() => {
+      const y = scrollY, max = document.documentElement.scrollHeight - innerHeight;
+      nav.classList.toggle("show", y > innerHeight * .6);
+      bar.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
+      if (!REDUCED) paper.style.transform = `translate3d(0,${(-(y * .35) % 120).toFixed(1)}px,0)`;
+      let on = -1; secs.forEach((s, i) => { if (s && s.getBoundingClientRect().top < innerHeight * .4) on = i; });
+      links.forEach((a, i) => a.classList.toggle("on", i === on));
+      ticking = false;
+    });
+  }
+  addEventListener("scroll", onScroll, {passive: true}); onScroll();
+  document.querySelectorAll("h2 .uline path").forEach(p => p.style.setProperty("--len", Math.ceil(p.getTotalLength() + 4)));
+  function count(el){
+    const to = Number(el.dataset.count), dec = Number(el.dataset.dec || 0), suf = el.dataset.suffix || "";
+    if (REDUCED || to === 0){ el.textContent = (dec ? to.toFixed(dec) : fmt(to)) + suf; return; }
+    const t0 = performance.now(), dur = 1600;
+    const stepf = now => { const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3), v = to * e;
+      el.textContent = (dec ? v.toFixed(dec) : fmt(Math.round(v))) + suf; if (k < 1) requestAnimationFrame(stepf); };
+    requestAnimationFrame(stepf);
+  }
+  const io = new IntersectionObserver(es => es.forEach(en => {
+    if (!en.isIntersecting) return;
+    en.target.classList.add("in"); io.unobserve(en.target);
+    en.target.querySelectorAll("[data-count]").forEach(count);
+    if (en.target.dataset.count !== undefined) count(en.target);
+  }), {threshold: .15, rootMargin: "0px 0px -5% 0px"});
+  document.querySelectorAll(".reveal, .hero-stats b").forEach(el => io.observe(el));
+})();
+
+// ---- §1 story: universe 613 told in four pictures ----------------------
+(function story(){
+  const svg = document.getElementById("storySvg"), cap = document.getElementById("storyCap");
+  const U = decodeRows(613, 2);
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text !== undefined) e.textContent = text; (parent || svg).appendChild(e); return e; };
+  const ink = css("--ink"), ink3 = css("--ink-3"), edge = css("--edge"), lat = css("--lattice"), axis = css("--axis");
+  const plus = css("--cycle"), minus = css("--spiral");
+  // A: a bit matrix that reduces to universe 613. Value x → bits (1,0), (0,1), or (1,1)/(0,0) for zero.
+  const A = el("g", {class: "layer"});
+  const rowsOf = [U.pos[0], U.neg[0], U.pos[1], U.neg[1]];
+  const chan = ["e₀⁺","e₀⁻","e₁⁺","e₁⁻"];
+  let zeros = 0;
+  const M = rowsOf.map(row => row.flatMap(x => x === 1 ? [1,0] : x === -1 ? [0,1] : (zeros++ === 0 ? [1,1] : [0,0])));
+  const cs = 70, x0 = 120, y0 = 120;
+  el("text", {x: 260, y: 62, "text-anchor": "middle", "font-family": "IBM Plex Mono", "font-size": 13, fill: ink3}, A, "activation matrix M (4 × 4 bits)");
+  chan.forEach((c, i) => {
+    el("text", {x: x0 - 16, y: y0 + i*cs + cs/2 + 6, "text-anchor": "end", "font-family": "STIX Two Text", "font-size": 20, fill: ink}, A, c);
+    el("text", {x: x0 + i*cs + cs/2, y: y0 - 14, "text-anchor": "middle", "font-family": "STIX Two Text", "font-size": 20, fill: ink}, A, c);
+  });
+  M.forEach((row, r) => row.forEach((b, c) => {
+    el("rect", {x: x0 + c*cs + 4, y: y0 + r*cs + 4, width: cs - 8, height: cs - 8, rx: 8, fill: b ? ink : "#fff", stroke: b ? ink : edge}, A);
+    el("text", {x: x0 + c*cs + cs/2, y: y0 + r*cs + cs/2 + 7, "text-anchor": "middle", "font-family": "IBM Plex Mono", "font-size": 20, fill: b ? "#fff" : ink3}, A, String(b));
+  }));
+  [1].forEach(c => el("line", {x1: x0 + (c+1)*cs, y1: y0 - 4, x2: x0 + (c+1)*cs, y2: y0 + 4*cs + 4, stroke: css("--margin"), "stroke-width": 2, "stroke-dasharray": "4 5"}, A));
+  // B: the two reduced drift tables
+  const B = el("g", {class: "layer off"});
+  const table = (rows, x, y, title, subtitle) => {
+    el("text", {x: x + 80, y: y - 36, "text-anchor": "middle", "font-family": "STIX Two Text", "font-style": "italic", "font-size": 26, fill: ink}, B, title);
+    el("text", {x: x + 80, y: y - 13, "text-anchor": "middle", "font-family": "IBM Plex Mono", "font-size": 12, fill: ink3}, B, subtitle);
+    rows.forEach((row, f) => row.forEach((v, e) => {
+      const col = v > 0 ? plus : v < 0 ? minus : ink3;
+      el("rect", {x: x + e*80 + 4, y: y + f*80 + 4, width: 72, height: 72, rx: 10, fill: "#fff", stroke: v ? col : edge, "stroke-width": v ? 2 : 1}, B);
+      el("text", {x: x + e*80 + 40, y: y + f*80 + 50, "text-anchor": "middle", "font-family": "STIX Two Text", "font-size": 30, fill: col}, B, v > 0 ? "+1" : v < 0 ? "−1" : "0");
+    }));
+  };
+  table(U.pos, 70, 180, "d⁺", "fires if v_f > 0");
+  table(U.neg, 290, 180, "d⁻", "fires if v_f < 0");
+  el("text", {x: 260, y: 388, "text-anchor": "middle", "font-family": "STIX Two Text", "font-size": 19, fill: ink}, B, "d = M[r][2e] − M[r][2e+1]");
+  // C: the vector field; D: the orbit on top of it
+  const C = el("g", {class: "layer off"}), D = el("g", {class: "layer off"});
+  const R = 4, cell = 52, o = 260;
+  const P = (x, y) => [o + x*cell, o - y*cell];
+  for (let i = -R; i <= R; i++){
+    el("line", {x1: P(i,-R)[0], y1: P(i,-R)[1] + 18, x2: P(i,R)[0], y2: P(i,R)[1] - 18, stroke: i ? lat : axis, "stroke-width": i ? 1 : 2}, C);
+    el("line", {x1: P(-R,i)[0] - 18, y1: P(-R,i)[1], x2: P(R,i)[0] + 18, y2: P(R,i)[1], stroke: i ? lat : axis, "stroke-width": i ? 1 : 2}, C);
+  }
+  const defs = el("defs", {});
+  const mk = el("marker", {id: "ah", viewBox: "0 0 10 10", refX: 8, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse"}, defs);
+  el("path", {d: "M0 0L10 5L0 10z", fill: ink}, mk);
+  for (const [sx, sy] of [[1,1],[-1,1],[-1,-1],[1,-1]]){
+    const d = drift(U, [sx, sy]);
+    const [cx, cy] = P(sx * 2.4, sy * 2.4), L = 34 / Math.max(1, Math.hypot(d[0], d[1]));
+    el("line", {x1: cx - d[0]*L, y1: cy + d[1]*L, x2: cx + d[0]*L, y2: cy - d[1]*L, stroke: ink, "stroke-width": 2.6, "marker-end": "url(#ah)"}, C);
+    el("text", {x: cx, y: cy + (sy > 0 ? -50 : 64), "text-anchor": "middle", "font-family": "STIX Two Text", "font-size": 17, fill: ink3}, C,
+      `(${sx>0?"+":"−"},${sy>0?"+":"−"}) → (${d[0]}, ${d[1]})`.replace(/-(\d)/g, "−$1"));
+  }
+  const run = makeRun(U, [0,0], "cycle"); for (let i = 0; i < 14; i++) stepRun(run);
+  const pts = run.path;
+  const pathStr = (a, b) => pts.slice(a, b + 1).map((p, i) => (i ? "L" : "M") + P(p[0], p[1]).join(" ")).join("");
+  const trans = el("path", {d: pathStr(0, 4), fill: "none", stroke: ink3, "stroke-width": 2.5, "stroke-dasharray": "6 6", "stroke-linecap": "round"}, D);
+  const loop = el("path", {d: pathStr(4, 14), fill: "none", stroke: css("--cycle"), "stroke-width": 4, "stroke-linejoin": "round", "stroke-linecap": "round"}, D);
+  pts.slice(0, 14).forEach((p, i) => el("circle", {cx: P(p[0], p[1])[0], cy: P(p[0], p[1])[1], r: i === 0 ? 7 : 5, fill: i === 0 ? ink : (i >= 4 ? css("--cycle") : ink3), stroke: "#fff", "stroke-width": 2}, D));
+  el("text", {x: P(0,0)[0] + 12, y: P(0,0)[1] + 24, "font-family": "Caveat", "font-size": 22, fill: ink}, D, "start: 0");
+  const layers = [A, B, C, D];
+  const caps = ["universe 613 · 16 bits", "two 2 × 2 tables of −1, 0, +1", "one velocity per quadrant", "transient (dashed), then a loop of period 10"];
+  let cur = -1;
+  function show(i){
+    if (i === cur) return; cur = i;
+    layers.forEach((g, k) => g.classList.toggle("off", !(k === i || (i === 3 && k === 2))));
+    cap.textContent = caps[i];
+    if (i === 3 && !REDUCED){
+      const L = loop.getTotalLength();
+      loop.style.transition = "none"; loop.style.strokeDasharray = L; loop.style.strokeDashoffset = L; trans.style.opacity = 0;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        trans.style.transition = "opacity .6s"; trans.style.opacity = 1;
+        loop.style.transition = "stroke-dashoffset 2.6s cubic-bezier(.4,.1,.2,1) .4s"; loop.style.strokeDashoffset = 0;
+      }));
+    }
+  }
+  show(0);
+  const steps = [...document.querySelectorAll(".step")];
+  const so = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting){ steps.forEach(s => s.classList.toggle("on", s === en.target)); show(Number(en.target.dataset.step)); } }), {rootMargin: "-45% 0px -45% 0px"});
+  steps.forEach(s => so.observe(s));
+})();
 
 // ---- cards ------------------------------------------------------------
 const cards = [];
@@ -196,18 +871,15 @@ function pickAxes(u, starts){
   for (const s of starts){ const r = makeRun(u, s.start, s.kind); for (let i=0;i<300 && !r.done;i++) stepRun(r);
     for (const p of r.path) for (let e=0;e<N;e++){ mn[e]=Math.min(mn[e],p[e]); mx[e]=Math.max(mx[e],p[e]); } }
   for (let e=0;e<N;e++) range[e] = mx[e]-mn[e];
-  const idx = [...Array(N).keys()].sort((a,b)=>range[b]-range[a]).slice(0,2).sort();
-  return idx;
+  return [...Array(N).keys()].sort((a,b)=>range[b]-range[a]).slice(0,2).sort();
 }
-// Steps worth showing: stop once the fate is settled instead of running on forever.
 // Every moving fate runs at least MIN_SHOW steps. fixed: when the state stops; cycle: whole laps,
-// at least four; ray: well past the absorbing orthant; helix: whole shifted repeats, at least four; spiral: the cap.
+// at least four; ray: well past the absorbing quadrant; helix: whole shifted repeats, at least four; spiral: the cap.
 const MIN_SHOW = 160;
 const laps = (from, period, cap) => { let k = 4; while (from + k*period < MIN_SHOW) k++; return Math.min(cap, from + k*period); };
 function fateEnd(cl, size, cap){
   const r = makeRun(cl, new Array(size).fill(0), cl.kind), seen = new Map(), path = [r.v.slice()];
   const sgn = v => v.map(Math.sign).join(",");
-  seen.set(r.v.join(","), 0);
   for (let t = 1; t <= cap; t++){
     stepRun(r);
     if (r.done) return t;
@@ -256,7 +928,7 @@ function setPlaying(c, on){
   if (!on) drawCard(c);
 }
 // Cards play while on screen and stop when scrolled away. A card the user paused stays paused.
-const AUTOPLAY = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+const AUTOPLAY = !REDUCED;
 const viewport = new IntersectionObserver(entries => {
   for (const en of entries){
     const c = en.target._card; if (!c) continue;
@@ -265,12 +937,12 @@ const viewport = new IntersectionObserver(entries => {
     else if (AUTOPLAY && !c.userPaused && !c.playing) setPlaying(c, true);
   }
 }, {threshold: 0.25});
-function attachCard(el, cl, size, axes, list){
-  const maxSteps = fateEnd(cl, size, Math.min(3200, Math.max(420, 2*cl.param + 80)));
+function attachCard(el, cl, size, axes, list, maxSteps){
+  maxSteps = maxSteps || fateEnd(cl, size, Math.min(3200, Math.max(420, 2*cl.param + 80)));
   const c = {el, set: cl, axes, canvas: el.querySelector("canvas"), runs: [], t: 0, view: null, playing: false, maxSteps, visible: false, userPaused: false};
   c.set.starts = [{start: new Array(size).fill(0), kind: cl.kind}];
   c.btn = el.querySelector(".playbtn");
-  c.btn.addEventListener("click", () => { c.userPaused = c.playing; setPlaying(c, !c.playing); });
+  c.btn.onclick = () => { c.userPaused = c.playing; setPlaying(c, !c.playing); };
   resetCard(c);
   list.push(c);
   el._card = c; viewport.observe(el);
@@ -319,7 +991,6 @@ function drawRadial(c){
   const scale = R / c.rview;
   const pt = (t, r) => { const a = 2*Math.PI * t / REV - Math.PI/2; return [cx + Math.cos(a) * r * scale, cy + Math.sin(a) * r * scale]; };
   ctx.clearRect(0,0,W,H); ctx.fillStyle = css("--paper"); ctx.fillRect(0,0,W,H);
-  // rings
   const span = c.rview;
   const rstep = span <= 12 ? 1 : span <= 40 ? 5 : span <= 120 ? 10 : span <= 600 ? 50 : span <= 3000 ? 250 : 1000;
   ctx.font = "17px IBM Plex Mono, monospace"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
@@ -327,12 +998,10 @@ function drawRadial(c){
     ctx.strokeStyle = css("--lattice"); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, r*scale, 0, 7); ctx.stroke();
     ctx.fillStyle = css("--ink-3"); ctx.fillText(String(r), cx + 6, cy - r*scale);
   }
-  // spokes: quarter turns
   for (let q = 0; q < 4; q++){
     const [x, y] = pt(q * REV/4, c.rview); ctx.strokeStyle = css("--axis"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke();
     const [lx, ly] = pt(q * REV/4, c.rview * 1.08); ctx.fillStyle = css("--ink-3"); ctx.textAlign = "center"; ctx.fillText("t≡" + (q * REV/4), lx, ly);
   }
-  // traces
   for (const r of c.runs){
     const off = r.steps + 1 - r.path.length;
     for (let e = N - 1; e >= -1; e--){
@@ -345,7 +1014,6 @@ function drawRadial(c){
     const last = r.path[r.path.length - 1]; const [hx, hy] = pt(off + r.path.length - 1, norm(last));
     ctx.fillStyle = r.color; ctx.beginPath(); ctx.arc(hx, hy, r.done ? 8 : 6, 0, 7); ctx.fill();
     if (r.done){
-      // A fixed point keeps its radius forever: draw the ring it would trace.
       ctx.strokeStyle = r.color; ctx.lineWidth = 2; ctx.setLineDash([3,5]); ctx.globalAlpha = 0.6;
       ctx.beginPath(); ctx.arc(cx, cy, norm(last) * scale, 0, 7); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
       ctx.beginPath(); ctx.arc(hx, hy, 13, 0, 7); ctx.stroke();
@@ -363,7 +1031,7 @@ function drawWaves(c){
   const ml = 64, mr = 14, mt = 40, mb = 40;
   let y0 = 0, y1 = 0;
   for (const r of c.runs){
-    const off = r.steps + 1 - r.path.length; // absolute step of path[0]
+    const off = r.steps + 1 - r.path.length;
     r.path.forEach((p, i) => { const t = off + i; if (t < tStart) return; for (let e=0;e<N;e++){ y0 = Math.min(y0, p[e]); y1 = Math.max(y1, p[e]); } });
   }
   const pad = Math.max(1, (y1 - y0) * 0.12); y0 -= pad; y1 += pad; if (y1 - y0 < 6){ const m=(y0+y1)/2; y0=m-3; y1=m+3; }
@@ -373,7 +1041,6 @@ function drawWaves(c){
   const sx = t => ml + (t - tStart) / (tEnd - tStart) * (W - ml - mr);
   const sy = y => mt + (v.y1 - y) / (v.y1 - v.y0) * (H - mt - mb);
   ctx.clearRect(0,0,W,H); ctx.fillStyle = css("--paper"); ctx.fillRect(0,0,W,H);
-  // grid
   const span = v.y1 - v.y0;
   const ystep = span <= 12 ? 1 : span <= 40 ? 5 : span <= 120 ? 10 : span <= 600 ? 50 : span <= 3000 ? 250 : 1000;
   ctx.font = "18px IBM Plex Mono, monospace"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
@@ -388,7 +1055,6 @@ function drawWaves(c){
     ctx.strokeStyle = css("--lattice"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(sx(t), mt); ctx.lineTo(sx(t), H - mb); ctx.stroke();
     ctx.fillStyle = css("--ink-3"); ctx.fillText("t=" + t, sx(t), H - mb + 8);
   }
-  // waves
   for (const r of c.runs){
     const off = r.steps + 1 - r.path.length;
     for (let e = 0; e < N; e++){
@@ -420,15 +1086,12 @@ function drawPortrait(c){
   const sy = y => H/2 - (y - v.cy) / v.span * H;
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle = css("--paper"); ctx.fillRect(0,0,W,H);
-  // lattice
   const step = v.span <= 30 ? 1 : v.span <= 80 ? 5 : v.span <= 300 ? 10 : v.span <= 1500 ? 50 : v.span <= 8000 ? 250 : 1000;
   const gx0 = Math.floor((v.cx - v.span/2)/step)*step, gx1 = v.cx + v.span/2;
   const gy0 = Math.floor((v.cy - v.span/2)/step)*step, gy1 = v.cy + v.span/2;
-  ctx.lineWidth = 1;
   for (let x=gx0; x<=gx1; x+=step){ ctx.strokeStyle = x===0 ? css("--axis") : css("--lattice"); ctx.lineWidth = x===0?2:1; ctx.beginPath(); ctx.moveTo(sx(x),0); ctx.lineTo(sx(x),H); ctx.stroke(); }
   for (let y=gy0; y<=gy1; y+=step){ ctx.strokeStyle = y===0 ? css("--axis") : css("--lattice"); ctx.lineWidth = y===0?2:1; ctx.beginPath(); ctx.moveTo(0,sy(y)); ctx.lineTo(W,sy(y)); ctx.stroke(); }
   ctx.font = "20px IBM Plex Mono, monospace"; ctx.fillStyle = css("--ink-3"); ctx.textAlign="left"; ctx.fillText("grid "+step, 12, H-12);
-  // paths
   for (const r of c.runs){
     ctx.strokeStyle = r.color; ctx.lineWidth = 3; ctx.lineJoin = "round"; ctx.globalAlpha = 0.85;
     ctx.beginPath();
@@ -441,31 +1104,95 @@ function drawPortrait(c){
   ctx.font = "22px IBM Plex Mono, monospace"; ctx.fillStyle = css("--ink-2"); ctx.textAlign="left"; ctx.fillText("t = "+c.t, 12, 28);
 }
 
-// ---- page -------------------------------------------------------------
+// ---- §2 five fates legend: one live size-3 universe per fate -----------
+const legendCards = [];
+(function(){
+  const P = [
+    {k:"fixed", tag:"proof", cert:"<i>d</i>(sign <i>v</i>) = 0", cap:"Stops: the velocity reaches zero and the state freezes."},
+    {k:"cycle", tag:"proof", cert:"<i>v</i>(<i>t</i> + <i>T</i>) = <i>v</i>(<i>t</i>)", cap:"Repeats: the state returns to itself and loops forever."},
+    {k:"ray", tag:"proof", cert:"sign <i>d</i> agrees with sign <i>v</i>", cap:"Escapes in a straight line from a quadrant it cannot leave."},
+    {k:"helix", tag:"proof", cert:"<i>v</i>(<i>t</i> + <i>T</i>) = <i>v</i>(<i>t</i>) + <i>D</i>", cap:"Escapes while repeating: one segment, shifted every period."},
+    {k:"spiral", tag:"empirical", cert:"‖<i>x</i><sub><i>k</i>+1</sub>‖ &gt; ‖<i>x</i><sub><i>k</i></sub>‖", cap:"Winds outward: each return to the same pattern is larger."},
+  ];
+  const host = document.getElementById("fatesRow");
+  P.forEach((p, i) => {
+    const cl = LEGEND.find(c => c.kind === p.k);
+    if (!cl) return;
+    const fig = document.createElement("figure"); fig.className = `fate reveal d${i % 4 + 1}`; fig.style.setProperty("--c", `var(--${p.k})`);
+    const axes = pickAxes(cl, [{start: [0,0,0], kind: cl.kind}]);
+    fig.innerHTML = `<div class="hd"><span class="nm">${p.k}</span><span class="tg">${p.tag}</span></div>
+      <div class="stage"><canvas width="420" height="420" role="img" aria-label="${p.k}: universe ${cl.index}"></canvas>
+      <button class="playbtn" aria-label="Play" title="Play / pause" aria-pressed="false">${ICON.play}</button></div>
+      <div class="cert">${p.cert}</div>
+      <figcaption>${p.cap}<span class="tg">universe ${cl.index}</span></figcaption>`;
+    host.appendChild(fig);
+    attachCard(fig, cl, 3, axes, legendCards);
+  });
+  legendCards.forEach(drawCard);
+  const io = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting){ en.target.classList.add("in"); io.unobserve(en.target); } }), {threshold: .1});
+  host.querySelectorAll(".fate").forEach(f => io.observe(f));
+})();
+const MODE_TEXT = {
+  portrait: "Portrait: the state as a point in the plane, two coordinates at a time; the line is the path it has taken.",
+  waves: "Waves: every coordinate plotted against time, one dash pattern per coordinate (see each chart's legend).",
+  radial: "Radial: time wraps around the circle, one turn per 60 steps, and the distance from the centre is the size of the state (thick: ‖v‖, thin: each |v<sub>e</sub>|).",
+};
+document.getElementById("modedesc").innerHTML = MODE_TEXT[MODE];
+
+// ---- §3 census chart (HTML, responsive) --------------------------------
+(function census(){
+  const legend = document.getElementById("censusLegend"), host = document.getElementById("censusBars"), tip = document.getElementById("tip");
+  const chart = document.getElementById("censusChart");
+  legend.innerHTML = ORDER.map(k => `<span><i style="background:var(--${k})"></i>${k}</span>`).join("");
+  const rows = [["2", "all 6,561"], ["3", "all 387,420,489"], ["4", "2·10⁹ sampled"]].filter(r => DATA[r[0]]);
+  host.innerHTML = rows.map(([size, note]) => {
+    const d = DATA[size], total = d.reduced;
+    const segs = ORDER.map(k => ({k, n: (d.fates[k] || [0])[0]})).filter(g => g.n).map(g => ({...g, pct: 100 * g.n / total}));
+    let acc = 0;
+    const labels = segs.map(g => { const mid = acc + g.pct / 2; acc += g.pct; if (g.pct < 6) return ""; const pos = mid < 12 ? `left:${(acc - g.pct).toFixed(2)}%;transform:none` : mid > 88 ? `right:0;transform:none` : `left:${mid.toFixed(2)}%`; return `<span style="${pos}">${g.k} ${g.pct.toFixed(1)}%</span>`; }).join("");
+    const small = segs.filter(g => g.pct < 6).map(g => `${g.k} ${g.pct < .1 ? g.pct.toFixed(2) : g.pct.toFixed(1)}%`).join(" · ");
+    return `<div class="crow"><div class="clab">N = ${size}<small>${note}</small></div><div>
+      <div class="cbar">${segs.map(g => `<span tabindex="0" data-k="${g.k}" data-n="${g.n}" data-p="${g.pct}" data-size="${size}" style="flex:${g.pct} 1 0;background:var(--${g.k})" aria-label="${g.k}: ${g.pct.toFixed(3)}%"></span>`).join("")}</div>
+      <div class="cnotes">${labels}</div>${small ? `<div class="csmall">${small}</div>` : ""}</div></div>`;
+  }).join("");
+  const segsAll = [...host.querySelectorAll(".cbar span")];
+  const show = (r, x, y) => {
+    const b = chart.getBoundingClientRect();
+    tip.innerHTML = `<b>${r.dataset.k}</b> at N = ${r.dataset.size}<br>${fmt(Number(r.dataset.n))} universes · ${Number(r.dataset.p).toFixed(3)}%`;
+    tip.style.left = `${Math.min(b.width - 90, Math.max(90, x - b.left))}px`; tip.style.top = `${y - b.top}px`; tip.style.opacity = 1;
+    segsAll.forEach(o => o.style.opacity = o === r ? 1 : .45);
+  };
+  const hide = () => { tip.style.opacity = 0; segsAll.forEach(o => o.style.opacity = 1); };
+  segsAll.forEach(r => {
+    r.addEventListener("pointermove", e => show(r, e.clientX, e.clientY));
+    r.addEventListener("pointerleave", hide);
+    r.addEventListener("focus", () => { const q = r.getBoundingClientRect(); show(r, q.left + q.width / 2, q.top); });
+    r.addEventListener("blur", hide);
+  });
+})();
+
+// ---- §4 explorer --------------------------------------------------------
 const DESC = {
-  fixed: "grouped by the step at which the drift became zero",
+  fixed: "grouped by the step at which the velocity became zero",
   cycle: "grouped by period",
-  ray: "grouped by the step at which the absorbing orthant was entered",
+  ray: "grouped by the step at which the absorbing quadrant was entered",
   helix: "grouped by the period of the repeating segment",
-  spiral: "one class: returns with growing norm (empirical)",
+  spiral: "one class: returns with growing size (empirical)",
 };
 function renderSize(size){
   cards.forEach(c => viewport.unobserve(c.el));
   cards.length = 0;
   const d = DATA[size];
   const page = document.getElementById("page");
-  if (!d){ page.innerHTML = `<p class="sub">No census for size ${size} yet.</p>`; return; }
+  if (!d){ page.innerHTML = `<p class="page-sub">No census for size ${size} yet.</p>`; return; }
   const total = d.reduced;
   const universe = size === "4" ? "1.85 · 10<sup>15</sup>" : fmt(Number(3n ** BigInt(2*size*size)));
   page.innerHTML = `
-    <h2>Census from zero</h2>
-    <p class="sub">${d.sampled
-      ? `Exact fates of ${fmt(total)} reduced size-${size} universes drawn uniformly at random from all ${universe} (exhaustive enumeration would take about a year at 59 million universes per second). Percentages are estimates with 95 % half-widths below 0.002 %.`
-      : `Exact fates of all ${fmt(total)} reduced size-${size} universes`}, each started at the zero state with every channel firing once.${size !== "2" ? " Spirals are the empirical class; everything else is proven." : ""}</p>
+    <p class="page-sub">${d.sampled
+      ? `${fmt(total)} universes drawn uniformly at random from all ${universe}; percentages are estimates with 95 % half-widths below 0.002 %.`
+      : `All ${fmt(total)} universes of size ${size}, each started at the zero state.`} Tap a fate to jump to its universes.</p>
     <div class="census">${ORDER.map(k=>{ const has = d.classes.some(c => c.kind === k), tag = has ? "a" : "div";
       return `<${tag} class="stat" ${has ? `href="#fate-${k}" title="jump to the ${k} universes"` : ""} style="--c:var(${COLORS[k]})"><div class="k">${k}</div><div class="n">${fmt((d.fates[k]||[0])[0])}</div><div class="p">${(100*(d.fates[k]||[0])[0]/total).toFixed(3)}% · ${d.sampled ? "estimate" : "exact"}</div></${tag}>`; }).join("")}</div>
-    <h2>Typical and rarest universes</h2>
-    <p class="sub">Within each fate the census also records a finer class (period, or the step at which the certificate arrived). The first card shows the most common class, the highlighted cards the rarest ones; the count is how many ${d.sampled ? "sampled " : ""}universes fall in that class, and the universe shown is the one with the smallest index.</p>
     <div class="grid" id="grid"></div>`;
   const grid = document.getElementById("grid");
   const RARE = size === "2" ? 4 : 5;
@@ -476,55 +1203,133 @@ function renderSize(size){
     head.innerHTML = `<span class="name">${kind}</span><span class="desc">${cls.length} class${cls.length>1?"es":""} · ${DESC[kind]}</span>`;
     grid.appendChild(head);
     const byCount = cls.slice().sort((a,b)=>b.count-a.count);
-    const typical = byCount[0];
-    grid.appendChild(buildCard(typical, Number(size), total, "typical"));
+    grid.appendChild(buildCard(byCount[0], Number(size), total, "typical"));
     const rare = byCount.slice(1).sort((a,b)=>a.count-b.count || b.param-a.param).slice(0, RARE);
     rare.forEach(cl => grid.appendChild(buildCard(cl, Number(size), total, "rare")));
   }
   cards.forEach(drawCard);
 }
-// ---- the five fates legend: one live size-3 universe per fate, drawn in the current view ----
-const legendCards = [];
-(function(){
-  const P = [
-    {k:"fixed", tag:"proof", cap:"Stops: the drift reaches zero and the state freezes."},
-    {k:"cycle", tag:"proof", cap:"Repeats: the state returns to itself and loops forever."},
-    {k:"ray", tag:"proof", cap:"Escapes in a straight line once it enters a quadrant it cannot leave."},
-    {k:"helix", tag:"proof", cap:"Escapes while repeating: the same segment, shifted each period."},
-    {k:"spiral", tag:"empirical", cap:"Winds outward: each return to the same pattern is larger."},
-  ];
-  const host = document.getElementById("fates");
-  for (const p of P){
-    const cl = LEGEND.find(c => c.kind === p.k);
-    if (!cl) continue;
-    const fig = document.createElement("figure"); fig.className = "fate"; fig.style.setProperty("--c", `var(--${p.k})`);
-    const axes = pickAxes(cl, [{start: [0,0,0], kind: cl.kind}]);
-    fig.innerHTML = `<div class="hd"><span class="nm">${p.k}</span><span class="tg">${p.tag}</span></div>
-      <div class="stage"><canvas width="420" height="420" role="img" aria-label="${p.k} example"></canvas>
-      <button class="playbtn" aria-label="Play" title="Play / pause" aria-pressed="false">${ICON.play}</button></div>
-      <figcaption>${p.cap} <span class="tg">universe ${cl.index}</span></figcaption>`;
-    host.appendChild(fig);
-    attachCard(fig, cl, 3, axes, legendCards);
-  }
-  legendCards.forEach(drawCard);
-})();
-const MODE_TEXT = {
-  portrait: "Portrait: the state as a point in the plane, two coordinates at a time; the line is the path it has taken.",
-  waves: "Waves: every coordinate plotted against time, one dash pattern per coordinate (see each chart's legend).",
-  radial: "Radial: time wraps around the circle, one turn per 60 steps, and the distance from the centre is the size of the state (thick: ‖v‖, thin: each |v<sub>e</sub>|).",
-};
-document.getElementById("modedesc").innerHTML = MODE_TEXT[MODE];
 document.querySelectorAll('.tabs button').forEach(btn => btn.addEventListener('click', () => {
   document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b===btn));
   renderSize(btn.dataset.size);
 }));
 renderSize("3");
 
-// ---- animation loop ---------------------------------------------------
+// ---- §5 your universe ---------------------------------------------------
+// A line-for-line port of the Rust analyser (src/exact.rs, analyze_ws): event-driven, so it jumps from one
+// sign change to the next, and it returns the same certificates with the same budget.
+function analyze(u, maxEvents = 10000, maxNorm = 2 ** 50){
+  const N = u.pos.length;
+  let v = fireAll(u), step = 1, events = 0, top = 0;
+  const log = [], seen = new Map(), returns = new Map();
+  for (;;){
+    const s = v.map(Math.sign), sk = s.join(","), d = drift(u, v);
+    if (d.every(x => x === 0)) return {kind: "fixed", step, at: v.slice()};
+    if (s.every((x, e) => x === 0 ? d[e] === 0 : d[e] === 0 || Math.sign(d[e]) === x)) return {kind: "ray", step, dir: d};
+    const key = v.join(","), first = seen.get(key);
+    if (first !== undefined) return {kind: "cycle", transient: first, period: step - first};
+    for (let j = log.length - 1; j >= Math.max(0, log.length - 256); j--){
+      const L = log[j]; if (L.sk !== sk) continue;
+      const shift = v.map((x, e) => x - L.v[e]);
+      if (shift.every(x => x === 0)) continue;
+      let ok = true;
+      for (let e = 0; e < N && ok; e++){
+        if (shift[e] === 0) continue;
+        if (s[e] === 0 || Math.sign(shift[e]) !== s[e]) { ok = false; break; }
+        for (let k = j; k < log.length; k++) if (log[k].s[e] !== s[e]) { ok = false; break; }
+      }
+      if (ok) return {kind: "helix", step: L.step, period: step - L.step, shift};
+    }
+    seen.set(key, step); log.push({v: v.slice(), step, s, sk});
+    const norm = Math.max(...v.map(Math.abs)), r = returns.get(sk);
+    if (!r) returns.set(sk, [norm, 0]);
+    else { r[1] = norm > r[0] ? r[1] + 1 : 0; r[0] = norm; if (r[1] >= 8) return {kind: "spiral", step, returns: r[1]}; }
+    let k = Infinity;
+    for (let e = 0; e < N; e++){
+      if (s[e] === 0){ if (d[e] !== 0) k = 1; }
+      else if (Math.sign(d[e]) === -s[e]) k = Math.min(k, Math.ceil(Math.abs(v[e]) / Math.abs(d[e])));
+    }
+    for (let e = 0; e < N; e++){ v[e] += k * d[e]; top = Math.max(top, Math.abs(v[e])); }
+    step += k;
+    if (++events >= maxEvents || top >= maxNorm) return {kind: "undecided", events, step};
+  }
+}
+const playCards = [];
+(function yours(){
+  const form = document.getElementById("pgForm"), input = document.getElementById("pgIndex"), err = document.getElementById("pgErr");
+  const range = document.getElementById("pgRange"), verdict = document.getElementById("pgVerdict"), card = document.getElementById("pgCard");
+  const chip = document.getElementById("pgChip"), klass = document.getElementById("pgKlass"), meta = document.getElementById("pgMeta"), axesEl = document.getElementById("pgAxes");
+  const sizeBtns = [...form.querySelectorAll(".sizes button")];
+  let N = 3;
+  const maxOf = n => 3n ** BigInt(2 * n * n);
+  const setN = n => { N = n; sizeBtns.forEach(b => b.setAttribute("aria-pressed", Number(b.dataset.n) === n)); range.textContent = `0 … ${fmt(Number(maxOf(n) - 1n))}  (3^${2*n*n} universes)`; };
+  sizeBtns.forEach(b => b.addEventListener("click", () => { setN(Number(b.dataset.n)); err.textContent = ""; }));
+  const longest = (DATA["3"] && DATA["3"].classes.filter(c => c.kind === "cycle").sort((a, b) => b.param - a.param)[0]) || null;
+  const presets = [
+    {n: 2, i: 613, label: "613 · the cycle from §1"},
+    {n: 3, i: 27411247, label: "27411247 · a doubling spiral"},
+    longest && {n: 3, i: longest.index, label: `${longest.index} · a cycle of ${fmt(longest.param)} steps`},
+    {n: 3, i: (LEGEND.find(c => c.kind === "helix") || {index: 140914}).index, label: "a helix"},
+  ].filter(Boolean);
+  document.getElementById("pgPresets").innerHTML = presets.map((p, k) => `<button type="button" data-k="${k}">${p.label}</button>`).join("");
+  document.getElementById("pgPresets").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; const p = presets[b.dataset.k]; setN(p.n); input.value = p.i; run(true); });
+  const SENT = {
+    fixed: v => `The velocity reaches zero after ${fmt(v.step)} step${v.step === 1 ? "" : "s"}; the state stays at (${v.at.join(", ")}) forever.`,
+    cycle: v => `After ${fmt(v.transient)} step${v.transient === 1 ? "" : "s"} the state repeats every ${fmt(v.period)} steps. A repeated state is the proof.`,
+    ray: v => `From step ${fmt(v.step)} every coordinate moves away from zero, so the velocity (${v.dir.join(", ")}) never changes again.`,
+    helix: v => `From step ${fmt(v.step)} a ${v.period}-step segment replays, shifted by (${v.shift.join(", ")}) each time, without any sign changing.`,
+    spiral: v => `It keeps coming back to the same sign pattern, larger every time: ${v.returns} growing returns in a row by step ${fmt(v.step)}. This is the empirical class; no certificate proves it diverges.`,
+    undecided: v => `No certificate after ${fmt(v.events)} sign changes (step ${fmt(v.step)}). The engine leaves it open rather than guess.`,
+  };
+  function run(scroll){
+    err.textContent = "";
+    const raw = input.value.trim().replace(/[,_\s]/g, "");
+    if (!/^\d+$/.test(raw)){ err.textContent = "Enter a whole number, like 27411247."; return; }
+    const idx = BigInt(raw);
+    if (idx >= maxOf(N)){ err.textContent = `For N = ${N} the largest index is ${fmt(Number(maxOf(N) - 1n))}.`; return; }
+    const rows = decodeRows(idx, N), v = analyze(rows);
+    const kind = v.kind === "undecided" ? "spiral" : v.kind;
+    const param = v.period || v.step || 0;
+    const cl = {...rows, kind, param, index: raw, count: 0};
+    const maxSteps = Math.min(3200, v.kind === "cycle" ? laps(v.transient, v.period, 3200) : v.kind === "helix" ? laps(v.step, v.period, 3200)
+      : v.kind === "fixed" ? v.step + 1 : v.kind === "ray" ? Math.max(MIN_SHOW, v.step + 60) : 600);
+    playCards.forEach(c => viewport.unobserve(c.el)); playCards.length = 0;
+    const axes = pickAxes(cl, [{start: new Array(N).fill(0), kind}]);
+    attachCard(card, cl, N, axes, playCards, maxSteps);
+    const c = playCards[0];
+    c.userPaused = false; c.view = null; c.rview = null; c.wview = null;
+    if (c.visible && AUTOPLAY) setPlaying(c, true); else drawCard(c);
+    chip.textContent = v.kind; chip.style.setProperty("--c", `var(--${kind})`);
+    klass.textContent = (v.kind === "cycle" ? `period ${fmt(v.period)}` : v.kind === "helix" ? `helix period ${fmt(v.period)}` : v.kind === "fixed" ? `stops at step ${fmt(v.step)}`
+      : v.kind === "ray" ? `ray from step ${fmt(v.step)}` : v.kind === "spiral" ? "growing loop" : "no certificate") + (maxSteps >= 3200 && v.kind !== "spiral" ? " · first 3,200 steps shown" : "");
+    meta.textContent = `universe ${raw} · N = ${N}`; axesEl.textContent = N > 2 ? `axes (v${axes[0]}, v${axes[1]})` : "";
+    const cells = r => r.map(x => x > 0 ? "+1" : x < 0 ? "−1" : " 0").join(" ");
+    verdict.style.setProperty("--c", `var(--${kind})`);
+    verdict.innerHTML = `<div class="fatebig">${v.kind}</div><p>${SENT[v.kind](v)}</p>
+      <div class="rows"><span class="h">f</span><span class="h">d⁺, fires if v_f &gt; 0</span><span class="h">d⁻, fires if v_f &lt; 0</span>
+      ${rows.pos.map((r, f) => `<span class="f">${f}</span><span class="p">${cells(r)}</span><span class="n">${cells(rows.neg[f])}</span>`).join("")}</div>`;
+    history.replaceState(null, "", `#u=${N}-${raw}`);
+    if (scroll && card.getBoundingClientRect().top < 0) card.scrollIntoView({behavior: REDUCED ? "auto" : "smooth", block: "start"});
+  }
+  form.addEventListener("submit", e => { e.preventDefault(); run(true); });
+  document.getElementById("pgRandom").addEventListener("click", () => {
+    const max = Number(maxOf(N)); input.value = String(Math.floor(Math.random() * max)); run(false);
+  });
+  document.getElementById("pgShare").addEventListener("click", async e => {
+    const b = e.currentTarget, url = location.href;
+    try { await navigator.clipboard.writeText(url); b.textContent = "Link copied"; } catch { b.textContent = "Copy the address bar"; }
+    setTimeout(() => b.textContent = "Copy link", 1800);
+  });
+  const m = location.hash.match(/^#u=([234])-(\d+)$/);
+  if (m){ setN(Number(m[1])); input.value = m[2]; run(false); requestAnimationFrame(() => document.getElementById("yours").scrollIntoView()); }
+  else { setN(3); run(false); }
+})();
+
+// ---- animation loop for the cards --------------------------------------
 let acc = 0, last = performance.now();
 const speed = document.getElementById("speed"), spd = document.getElementById("spd"), play = document.getElementById("play");
 speed.addEventListener("input", ()=> spd.textContent = speed.value + " steps/s");
-const allCards = () => cards.concat(legendCards);
+const allCards = () => cards.concat(legendCards, playCards);
 play.addEventListener("click", ()=>{ allCards().forEach(c=>{ c.userPaused = false; if (c.visible) setPlaying(c,true); }); });
 document.getElementById("pause").addEventListener("click", ()=>{ allCards().forEach(c=>{ c.userPaused = true; setPlaying(c,false); }); });
 document.getElementById("restart").addEventListener("click", ()=>{ allCards().forEach(c=>{ resetCard(c); drawCard(c); }); });
@@ -532,12 +1337,11 @@ for (const m of ["portrait","waves","radial"]) document.getElementById("mode-"+m
   MODE = m;
   for (const k of ["portrait","waves","radial"]) document.getElementById("mode-"+k).setAttribute("aria-pressed", k===m);
   document.getElementById("modedesc").innerHTML = MODE_TEXT[m];
-  // every card restarts from the zero state in the new view
-  allCards().forEach(c => { resetCard(c); c.view = null; c.rview = null; drawCard(c); });
+  allCards().forEach(c => { resetCard(c); c.view = null; c.rview = null; c.wview = null; drawCard(c); });
   acc = 0;
 });
 function frame(now){
-  const dt = (now-last)/1000; last = now;
+  const dt = Math.min(.25, (now-last)/1000); last = now;
   acc += dt * Number(speed.value);
   const all = allCards(), live = all.filter(c=>c.playing);
   document.getElementById("pause").disabled = all.every(c => c.userPaused);
@@ -550,3 +1354,5 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 </script>
+</body>
+</html>

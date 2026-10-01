@@ -17,6 +17,13 @@ if "3" in data:
         cls = [c for c in data["3"]["classes"] if c["kind"] == kind]
         if cls:
             legend.append(min(cls, key=lambda c: (abs(c["param"] - target), c["index"])))
+# Hero rosettes: size-3 universes whose polar plots look good: mid-length cycles, helices, the spiral, a few rays.
+hero = []
+if "3" in data:
+    for c in data["3"]["classes"]:
+        k, p = c["kind"], c["param"]
+        if (k == "cycle" and 5 <= p <= 40) or k in ("helix", "spiral") or (k == "ray" and 3 <= p <= 12):
+            hero.append({key: c[key] for key in ("kind", "param", "index", "pos", "neg")})
 # Keep only the classes the page shows: the most common and the 8 rarest per fate.
 for d in data.values():
     keep = []
@@ -31,6 +38,6 @@ for d in data.values():
         keep.extend(rest[:8])
     d["classes"] = keep
 tmpl = open(root / "scripts/dynamics.template.html").read()
-out = tmpl.replace("__DATA__", json.dumps(data)).replace("__LEGEND__", json.dumps(legend))
+out = tmpl.replace("__DATA__", json.dumps(data)).replace("__LEGEND__", json.dumps(legend)).replace("__HERO__", json.dumps(hero, separators=(",", ":")))
 open(root / "docs/index.html", "w").write(out)
-print("wrote docs/index.html", len(out), "sizes", sorted(data))
+print("wrote docs/index.html", len(out), "sizes", sorted(data), "hero", len(hero))
