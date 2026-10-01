@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build docs/index.html (Universal Dynamics) from the exact census JSON exports (standard start)."""
+"""Build docs/index.html (Dynamics Engine) from the exact census JSON exports (standard start)."""
 import json, pathlib
 root = pathlib.Path(__file__).resolve().parent.parent
 data = {}
@@ -9,6 +9,14 @@ for size in (2, 3, 4):
         data[str(size)] = json.load(open(path))
     except (OSError, ValueError):
         print(f"skipping size {size}: {path} missing or incomplete")
+# The five-fates legend: one size-3 class per fate whose parameter is near a target that animates well.
+TARGET = {"fixed": 12, "cycle": 10, "ray": 6, "helix": 6, "spiral": 0}
+legend = []
+if "3" in data:
+    for kind, target in TARGET.items():
+        cls = [c for c in data["3"]["classes"] if c["kind"] == kind]
+        if cls:
+            legend.append(min(cls, key=lambda c: (abs(c["param"] - target), c["index"])))
 # Keep only the classes the page shows: the most common and the 8 rarest per fate.
 for d in data.values():
     keep = []
@@ -23,6 +31,6 @@ for d in data.values():
         keep.extend(rest[:8])
     d["classes"] = keep
 tmpl = open(root / "scripts/dynamics.template.html").read()
-out = tmpl.replace("__DATA__", json.dumps(data))
+out = tmpl.replace("__DATA__", json.dumps(data)).replace("__LEGEND__", json.dumps(legend))
 open(root / "docs/index.html", "w").write(out)
 print("wrote docs/index.html", len(out), "sizes", sorted(data))
