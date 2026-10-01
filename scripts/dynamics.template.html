@@ -366,8 +366,8 @@ footer p{color:var(--ink-3);font-size:14px}
     <a class="brand" href="#top"><svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 16l6-9 4 11-12 6-7-8 9-8" fill="none" stroke="#2F55D4" stroke-width="2.4" stroke-linejoin="round"/><circle cx="16" cy="16" r="2.6" fill="#1D2433"/></svg>Dynamics <i>Engine</i></a>
     <ul>
       <li><a href="#fates">Five fates</a></li>
-      <li><a href="#census">Census</a></li>
       <li><a href="#explorer">Explorer</a></li>
+      <li><a href="#census">Census</a></li>
       <li><a href="#yours">Try one</a></li>
       <li><a href="#cli">Install</a></li>
       <li><a href="#engineering">Engineering</a></li>
@@ -430,8 +430,22 @@ footer p{color:var(--ink-3);font-size:14px}
 </section>
 
 <!-- §2 ---------------------------------------------------------------- -->
-<section class="sec" id="census">
+<section class="sec" id="explorer">
   <span class="sec-no">§2</span>
+  <p class="eyebrow reveal">Typical and rarest, by size</p>
+  <h2 class="reveal">The <i>explorer</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 10C90 4 180 12 260 7s96 2 132 0"/></svg></h2>
+  <p class="sub reveal">Within each fate the census records a finer class: the period, or the step at which the certificate arrived. Here are the most common class and the rarest ones, each shown by the universe with the smallest index.</p>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="false" data-size="2"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.1" y="3.1" width="7.8" height="7.8" rx="1.5"/><rect x="13.1" y="3.1" width="7.8" height="7.8" rx="1.5"/><rect x="3.1" y="13.1" width="7.8" height="7.8" rx="1.5"/><rect x="13.1" y="13.1" width="7.8" height="7.8" rx="1.5"/></svg>Size 2</button>
+    <button role="tab" aria-selected="true" data-size="3"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.7" y="2.7" width="5.2" height="5.2" rx="1"/><rect x="9.4" y="2.7" width="5.2" height="5.2" rx="1"/><rect x="16.1" y="2.7" width="5.2" height="5.2" rx="1"/><rect x="2.7" y="9.4" width="5.2" height="5.2" rx="1"/><rect x="9.4" y="9.4" width="5.2" height="5.2" rx="1"/><rect x="16.1" y="9.4" width="5.2" height="5.2" rx="1"/><rect x="2.7" y="16.1" width="5.2" height="5.2" rx="1"/><rect x="9.4" y="16.1" width="5.2" height="5.2" rx="1"/><rect x="16.1" y="16.1" width="5.2" height="5.2" rx="1"/></svg>Size 3</button>
+    <button role="tab" aria-selected="false" data-size="4"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="3.9" height="3.9" rx=".75"/><rect x="7.5" y="2.5" width="3.9" height="3.9" rx=".75"/><rect x="12.5" y="2.5" width="3.9" height="3.9" rx=".75"/><rect x="17.5" y="2.5" width="3.9" height="3.9" rx=".75"/><rect x="2.5" y="7.5" width="3.9" height="3.9" rx=".75"/><rect x="7.5" y="7.5" width="3.9" height="3.9" rx=".75"/><rect x="12.5" y="7.5" width="3.9" height="3.9" rx=".75"/><rect x="17.5" y="7.5" width="3.9" height="3.9" rx=".75"/><rect x="2.5" y="12.5" width="3.9" height="3.9" rx=".75"/><rect x="7.5" y="12.5" width="3.9" height="3.9" rx=".75"/><rect x="12.5" y="12.5" width="3.9" height="3.9" rx=".75"/><rect x="17.5" y="12.5" width="3.9" height="3.9" rx=".75"/><rect x="2.5" y="17.5" width="3.9" height="3.9" rx=".75"/><rect x="7.5" y="17.5" width="3.9" height="3.9" rx=".75"/><rect x="12.5" y="17.5" width="3.9" height="3.9" rx=".75"/><rect x="17.5" y="17.5" width="3.9" height="3.9" rx=".75"/></svg>Size 4</button>
+  </div>
+  <div id="page"></div>
+</section>
+
+<!-- §3 ---------------------------------------------------------------- -->
+<section class="sec" id="census">
+  <span class="sec-no">§3</span>
   <p class="eyebrow reveal">Exhaustive where possible, sampled where not</p>
   <h2 class="reveal">The <i>census</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 8C70 3 150 13 230 8s120-4 162 2"/></svg></h2>
   <p class="sub reveal">Every universe started from zero, classified by its fate. Escape dominates and grows with size; the rare fates are where the structure lives.</p>
@@ -448,20 +462,6 @@ footer p{color:var(--ink-3);font-size:14px}
       <div class="fact reveal d4"><b data-count="59" data-suffix=" M/s">0</b><span>universes per second for the sampled <span class="mi">N</span> = 4 census, where exhaustive search would take about a year</span></div>
     </div>
   </div>
-</section>
-
-<!-- §3 ---------------------------------------------------------------- -->
-<section class="sec" id="explorer">
-  <span class="sec-no">§3</span>
-  <p class="eyebrow reveal">Typical and rarest, by size</p>
-  <h2 class="reveal">The <i>explorer</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 10C90 4 180 12 260 7s96 2 132 0"/></svg></h2>
-  <p class="sub reveal">Within each fate the census records a finer class: the period, or the step at which the certificate arrived. Here are the most common class and the rarest ones, each shown by the universe with the smallest index.</p>
-  <div class="tabs" role="tablist">
-    <button role="tab" aria-selected="false" data-size="2"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.1" y="3.1" width="7.8" height="7.8" rx="1.5"/><rect x="13.1" y="3.1" width="7.8" height="7.8" rx="1.5"/><rect x="3.1" y="13.1" width="7.8" height="7.8" rx="1.5"/><rect x="13.1" y="13.1" width="7.8" height="7.8" rx="1.5"/></svg>Size 2</button>
-    <button role="tab" aria-selected="true" data-size="3"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.7" y="2.7" width="5.2" height="5.2" rx="1"/><rect x="9.4" y="2.7" width="5.2" height="5.2" rx="1"/><rect x="16.1" y="2.7" width="5.2" height="5.2" rx="1"/><rect x="2.7" y="9.4" width="5.2" height="5.2" rx="1"/><rect x="9.4" y="9.4" width="5.2" height="5.2" rx="1"/><rect x="16.1" y="9.4" width="5.2" height="5.2" rx="1"/><rect x="2.7" y="16.1" width="5.2" height="5.2" rx="1"/><rect x="9.4" y="16.1" width="5.2" height="5.2" rx="1"/><rect x="16.1" y="16.1" width="5.2" height="5.2" rx="1"/></svg>Size 3</button>
-    <button role="tab" aria-selected="false" data-size="4"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="3.9" height="3.9" rx=".75"/><rect x="7.5" y="2.5" width="3.9" height="3.9" rx=".75"/><rect x="12.5" y="2.5" width="3.9" height="3.9" rx=".75"/><rect x="17.5" y="2.5" width="3.9" height="3.9" rx=".75"/><rect x="2.5" y="7.5" width="3.9" height="3.9" rx=".75"/><rect x="7.5" y="7.5" width="3.9" height="3.9" rx=".75"/><rect x="12.5" y="7.5" width="3.9" height="3.9" rx=".75"/><rect x="17.5" y="7.5" width="3.9" height="3.9" rx=".75"/><rect x="2.5" y="12.5" width="3.9" height="3.9" rx=".75"/><rect x="7.5" y="12.5" width="3.9" height="3.9" rx=".75"/><rect x="12.5" y="12.5" width="3.9" height="3.9" rx=".75"/><rect x="17.5" y="12.5" width="3.9" height="3.9" rx=".75"/><rect x="2.5" y="17.5" width="3.9" height="3.9" rx=".75"/><rect x="7.5" y="17.5" width="3.9" height="3.9" rx=".75"/><rect x="12.5" y="17.5" width="3.9" height="3.9" rx=".75"/><rect x="17.5" y="17.5" width="3.9" height="3.9" rx=".75"/></svg>Size 4</button>
-  </div>
-  <div id="page"></div>
 </section>
 
 <!-- §4 ---------------------------------------------------------------- -->
@@ -1136,7 +1136,7 @@ function drawPortrait(c){
   ctx.font = "22px IBM Plex Mono, monospace"; ctx.fillStyle = css("--ink-2"); ctx.textAlign="left"; ctx.fillText("t = "+c.t, 12, 28);
 }
 
-// ---- §2 five fates legend: one live size-3 universe per fate -----------
+// ---- §1 five fates legend: one live size-3 universe per fate -----------
 const legendCards = [];
 (function(){
   const P = [
@@ -1203,7 +1203,7 @@ document.getElementById("modedesc").innerHTML = MODE_TEXT[MODE];
   });
 })();
 
-// ---- §4 explorer --------------------------------------------------------
+// ---- §2 explorer --------------------------------------------------------
 const DESC = {
   fixed: "grouped by the step at which the velocity became zero",
   cycle: "grouped by period",
@@ -1247,7 +1247,7 @@ document.querySelectorAll('.tabs button').forEach(btn => btn.addEventListener('c
 }));
 renderSize("3");
 
-// ---- §5 your universe ---------------------------------------------------
+// ---- §4 your universe ---------------------------------------------------
 // A line-for-line port of the Rust analyser (src/exact.rs, analyze_ws): event-driven, so it jumps from one
 // sign change to the next, and it returns the same certificates with the same budget.
 function analyze(u, maxEvents = 10000, maxNorm = 2 ** 50){
