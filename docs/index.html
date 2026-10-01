@@ -1242,7 +1242,7 @@ const playCards = [];
   sizeBtns.forEach(b => b.addEventListener("click", () => { setN(Number(b.dataset.n)); err.textContent = ""; }));
   const longest = (DATA["3"] && DATA["3"].classes.filter(c => c.kind === "cycle").sort((a, b) => b.param - a.param)[0]) || null;
   const presets = [
-    {n: 2, i: 613, label: "613 · the cycle from §1"},
+    {n: 2, i: 613, label: "613 · the cycle from §6"},
     {n: 3, i: 27411247, label: "27411247 · a doubling spiral"},
     longest && {n: 3, i: longest.index, label: `${longest.index} · a cycle of ${fmt(longest.param)} steps`},
     {n: 3, i: (LEGEND.find(c => c.kind === "helix") || {index: 140914}).index, label: "a helix"},
@@ -1257,7 +1257,9 @@ const playCards = [];
     spiral: v => `It keeps coming back to the same sign pattern, larger every time: ${v.returns} growing returns in a row by step ${fmt(v.step)}. This is the empirical class; no certificate proves it diverges.`,
     undecided: v => `No certificate after ${fmt(v.events)} sign changes (step ${fmt(v.step)}). The engine leaves it open rather than guess.`,
   };
-  function run(scroll){
+  let link = "";
+  // share: the reader picked this universe, so put it in the address bar; the default on load leaves the URL alone.
+  function run(scroll, share = true){
     err.textContent = "";
     const raw = input.value.trim().replace(/[,_\s]/g, "");
     if (!/^\d+$/.test(raw)){ err.textContent = "Enter a whole number, like 27411247."; return; }
@@ -1284,7 +1286,8 @@ const playCards = [];
     verdict.innerHTML = `<div class="fatebig">${v.kind}</div><p>${SENT[v.kind](v)}</p>
       <div class="rows"><span class="h">f</span><span class="h">d⁺, fires if v_f &gt; 0</span><span class="h">d⁻, fires if v_f &lt; 0</span>
       ${rows.pos.map((r, f) => `<span class="f">${f}</span><span class="p">${cells(r)}</span><span class="n">${cells(rows.neg[f])}</span>`).join("")}</div>`;
-    history.replaceState(null, "", `#u=${N}-${raw}`);
+    link = `${location.origin}${location.pathname}#u=${N}-${raw}`;
+    if (share) history.replaceState(null, "", `#u=${N}-${raw}`);
     if (scroll && card.getBoundingClientRect().top < 0) card.scrollIntoView({behavior: REDUCED ? "auto" : "smooth", block: "start"});
   }
   form.addEventListener("submit", e => { e.preventDefault(); run(true); });
@@ -1292,13 +1295,13 @@ const playCards = [];
     const max = Number(maxOf(N)); input.value = String(Math.floor(Math.random() * max)); run(false);
   });
   document.getElementById("pgShare").addEventListener("click", async e => {
-    const b = e.currentTarget, url = location.href;
-    try { await navigator.clipboard.writeText(url); b.textContent = "Link copied"; } catch { b.textContent = "Copy the address bar"; }
+    const b = e.currentTarget;
+    try { await navigator.clipboard.writeText(link); b.textContent = "Link copied"; } catch { b.textContent = "Copy the address bar"; }
     setTimeout(() => b.textContent = "Copy link", 1800);
   });
   const m = location.hash.match(/^#u=([234])-(\d+)$/);
-  if (m){ setN(Number(m[1])); input.value = m[2]; run(false); requestAnimationFrame(() => document.getElementById("yours").scrollIntoView()); }
-  else { setN(3); run(false); }
+  if (m){ setN(Number(m[1])); input.value = m[2]; run(false, false); requestAnimationFrame(() => document.getElementById("yours").scrollIntoView()); }
+  else { setN(3); run(false, false); }
 })();
 
 // ---- animation loop for the cards --------------------------------------
