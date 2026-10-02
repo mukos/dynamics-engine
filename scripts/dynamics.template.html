@@ -225,6 +225,16 @@ a.stat .k::after{content:" ↓";font-size:14px}
 .rowhead{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-top:18px;padding-top:14px;border-top:1px dashed var(--grid-major);scroll-margin-top:80px}
 .rowhead .name{font-family:var(--serif);font-size:28px;font-weight:500;color:var(--c)}
 .rowhead .desc{color:var(--ink-2);font-size:14px}
+.frow{display:contents}
+.rowhead .swipehint{display:none}
+@media (max-width:640px){
+  .grid{gap:8px}
+  .frow{grid-column:1/-1;display:grid;grid-auto-flow:column;grid-auto-columns:min(80vw,300px);gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;
+    margin:0 calc(-1 * var(--gutter));padding:14px var(--gutter) 10px;scroll-padding:0 var(--gutter);scrollbar-width:none}
+  .frow::-webkit-scrollbar{display:none}
+  .frow>.card{scroll-snap-align:start}
+  .rowhead .swipehint{display:inline;font-family:var(--hand);font-size:19px;color:var(--pencil)}
+}
 .badge{position:absolute;top:-10px;left:12px;background:var(--hi-edge);color:#1D2433;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:4px}
 .badge.typical{background:var(--ink);color:var(--paper)}
 .stage{position:relative}
@@ -1232,12 +1242,16 @@ function renderSize(size){
     const cls = d.classes.filter(c => c.kind === kind);
     if (!cls.length) continue;
     const head = document.createElement("div"); head.className = "rowhead"; head.id = `fate-${kind}`; head.style.setProperty("--c", `var(${COLORS[kind]})`);
-    head.innerHTML = `<span class="name">${kind}</span><span class="desc">${cls.length} class${cls.length>1?"es":""} · ${DESC[kind]}</span>`;
-    grid.appendChild(head);
     const byCount = cls.slice().sort((a,b)=>b.count-a.count);
-    grid.appendChild(buildCard(byCount[0], Number(size), total, "typical"));
     const rare = byCount.slice(1).sort((a,b)=>a.count-b.count || b.param-a.param).slice(0, RARE);
-    rare.forEach(cl => grid.appendChild(buildCard(cl, Number(size), total, "rare")));
+    head.innerHTML = `<span class="name">${kind}</span><span class="desc">${cls.length} class${cls.length>1?"es":""} · ${DESC[kind]}</span>`
+      + (rare.length ? `<span class="swipehint" aria-hidden="true">swipe for ${rare.length} rare →</span>` : "");
+    grid.appendChild(head);
+    // One row per fate: flows into the grid on wide screens, a swipeable strip on phones.
+    const row = document.createElement("div"); row.className = "frow";
+    row.appendChild(buildCard(byCount[0], Number(size), total, "typical"));
+    rare.forEach(cl => row.appendChild(buildCard(cl, Number(size), total, "rare")));
+    grid.appendChild(row);
   }
   cards.forEach(drawCard);
 }
