@@ -419,7 +419,7 @@ footer p{color:var(--ink-3);font-size:14px}
   <span class="sec-no">§1</span>
   <p class="eyebrow reveal">Live, from the zero state</p>
   <h2 class="reveal">Five <i>fates</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 9C90 14 170 4 250 9s100-2 142 0"/></svg></h2>
-  <p class="sub reveal">Every orbit ends in one of five ways. Four come with a certificate the engine checks exactly; the fifth is the honest remainder, recognised from growth it cannot yet prove. Each card is a real three-element universe, simulated in your browser.</p>
+  <p class="sub reveal">Every orbit ends in one of five ways. Four are proven exactly; the fifth is the honest remainder, recognised from growth the engine cannot yet prove. Each card is a real three-element universe, simulated in your browser.</p>
   <div class="fates" id="fatesRow" aria-label="the five fates"></div>
   <div class="swipe" aria-hidden="true">swipe for all five →</div>
   <div class="viewbar reveal">
@@ -444,7 +444,7 @@ footer p{color:var(--ink-3);font-size:14px}
   <span class="sec-no">§2</span>
   <p class="eyebrow reveal">Typical and rarest, by size</p>
   <h2 class="reveal">The <i>explorer</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 10C90 4 180 12 260 7s96 2 132 0"/></svg></h2>
-  <p class="sub reveal">Within each fate the census records a finer class: the period, or the step at which the certificate arrived. Here are the most common class and the rarest ones, each shown by the universe with the smallest index.</p>
+  <p class="sub reveal">Within each fate the census records a finer class: the period, or the step at which the fate was proven. Here are the most common class and the rarest ones, each shown by the universe with the smallest index.</p>
   <div class="tabs" role="tablist">
     <button role="tab" aria-selected="false" data-size="2"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.1" y="3.1" width="7.8" height="7.8" rx="1.5"/><rect x="13.1" y="3.1" width="7.8" height="7.8" rx="1.5"/><rect x="3.1" y="13.1" width="7.8" height="7.8" rx="1.5"/><rect x="13.1" y="13.1" width="7.8" height="7.8" rx="1.5"/></svg>Size 2</button>
     <button role="tab" aria-selected="true" data-size="3"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.7" y="2.7" width="5.2" height="5.2" rx="1"/><rect x="9.4" y="2.7" width="5.2" height="5.2" rx="1"/><rect x="16.1" y="2.7" width="5.2" height="5.2" rx="1"/><rect x="2.7" y="9.4" width="5.2" height="5.2" rx="1"/><rect x="9.4" y="9.4" width="5.2" height="5.2" rx="1"/><rect x="16.1" y="9.4" width="5.2" height="5.2" rx="1"/><rect x="2.7" y="16.1" width="5.2" height="5.2" rx="1"/><rect x="9.4" y="16.1" width="5.2" height="5.2" rx="1"/><rect x="16.1" y="16.1" width="5.2" height="5.2" rx="1"/></svg>Size 3</button>
@@ -479,7 +479,7 @@ footer p{color:var(--ink-3);font-size:14px}
   <span class="sec-no">§4</span>
   <p class="eyebrow reveal">Pick any universe</p>
   <h2 class="reveal">Try <i>your</i> number<svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 9C80 4 170 13 250 8s104-3 142 1"/></svg></h2>
-  <p class="sub reveal">Every universe has an index: its drift tables read as one number in base 3. Type any index, and your browser decodes it, runs it from zero and decides its fate with the same certificates the engine uses.</p>
+  <p class="sub reveal">Every universe has an index: its drift tables read as one number in base 3. Type any index, and your browser decodes it, runs it from zero and decides its fate with the same proofs the engine uses.</p>
   <div class="lab">
     <div class="card" id="pgCard">
       <div class="top"><div><span class="chip" id="pgChip" style="--c:var(--ink-3)">universe</span><div class="klass" id="pgKlass">pick a number</div></div></div>
@@ -555,7 +555,7 @@ fate          reduced universes
   <h2 class="reveal">The <i>engineering</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 9C80 13 160 3 240 8s112 1 152-1"/></svg></h2>
   <p class="sub reveal">A dependency-free Rust codebase that turns an exponential search into seconds: reduce the space, prove instead of simulate, and keep the hot loop out of the allocator's way.</p>
   <div class="eng">
-    <div class="ecard reveal d1"><div class="hand">exact, not simulated</div><h3>Event-driven certificates</h3><p>The analyser jumps from one sign change to the next instead of stepping. A repeated state proves a cycle; a quadrant the velocity cannot leave proves a ray; a replayed segment <span class="math"><i>v</i>(<i>t</i>+<i>T</i>) = <i>v</i>(<i>t</i>) + <i>D</i></span> proves a helix.</p></div>
+    <div class="ecard reveal d1"><div class="hand">exact, not simulated</div><h3>Event-driven certificates</h3><p>The analyser jumps from one sign change to the next instead of stepping, and stops at a certificate: a checkable proof of the fate. A repeated state proves a cycle; a quadrant the velocity cannot leave proves a ray; a replayed segment <span class="math"><i>v</i>(<i>t</i>+<i>T</i>) = <i>v</i>(<i>t</i>) + <i>D</i></span> proves a helix.</p></div>
     <div class="ecard reveal d2"><div class="hand">symmetry</div><h3>Canonical forms</h3><p>Fates are invariant under the hyperoctahedral group of signed permutations. Burnside's lemma counts the orbits: 873 classes at <span class="mi">N</span> = 2, 8,093,160 at <span class="mi">N</span> = 3.</p></div>
     <div class="ecard reveal d3"><div class="hand">reduction</div><h3>From bits to ternary rows</h3><p>Only differences between paired channels matter, so <span class="math">2<sup>4<i>N</i>²</sup></span> bit matrices collapse to <span class="math">3<sup>2<i>N</i>²</sup></span> universes, each carrying a multiplicity of <span class="math">2<sup>zeros</sup></span>.</p></div>
     <div class="ecard wide reveal d1" id="perfCard"><div class="hand">performance</div><h3>Out of the allocator's way</h3><p>Static musl builds serialise threads on <code>malloc</code>. Reusing one workspace per thread and walking indices with an odometer removed every allocation from the hot loop. Size-3 census on 8 cores:</p>
@@ -564,7 +564,7 @@ fate          reduced universes
         <div class="pbar"><span>allocation-free loop</span><span class="track"><span class="fill" style="width:max(6px,calc((100% - 64px) * 6.6 / 527));background:var(--cycle)"></span><b>6.6 s</b></span></div>
       </div>
       <div class="hand" style="font-size:20px;margin-top:6px">80× faster, same answers</div></div>
-    <div class="ecard reveal d2"><div class="hand">verified</div><h3>Tests that pin the maths</h3><p>Certificates are checked against brute-force simulation, the index odometer against decoding, and the original TypeScript histogram is kept as a regression test.</p></div>
+    <div class="ecard reveal d2"><div class="hand">verified</div><h3>Tests that pin the maths</h3><p>The proofs are checked against brute-force simulation, the index odometer against decoding, and the original TypeScript histogram is kept as a regression test.</p></div>
   </div>
 </section>
 
@@ -597,7 +597,7 @@ fate          reduced universes
   <div class="refs">
     <div class="ref reveal d1"><b>Piecewise-constant derivatives</b><span>The continuous cousin: reachability is decidable in two dimensions and undecidable from three, which is why spirals stay empirical.</span><cite>Asarin, Maler, Pnueli (1995)</cite></div>
     <div class="ref reveal d2"><b>Glass networks</b><span>Gene-regulation models whose vector field depends only on which side of thresholds each variable lies.</span><cite>Glass, Kauffman (1973)</cite></div>
-    <div class="ref reveal d3"><b>Karp–Miller coverability</b><span>The helix certificate is its deterministic analogue: a repeated pattern whose gain keeps every sign repeats forever.</span><cite>Karp, Miller (1969)</cite></div>
+    <div class="ref reveal d3"><b>Karp–Miller coverability</b><span>The helix proof is its deterministic analogue: a repeated pattern whose gain keeps every sign repeats forever.</span><cite>Karp, Miller (1969)</cite></div>
     <div class="ref reveal d4"><b>Basins of attraction</b><span>Started away from zero, basins form sectors (55 %), stripes from conserved functionals (40 %) and parity checkerboards (1 %).</span><cite>computed by this engine</cite></div>
   </div>
 </section>
@@ -950,7 +950,7 @@ function fateEnd(cl, size, cap){
 function classLabel(cl){
   switch (cl.kind){
     case "fixed": return `stops at step ${fmt(cl.param)}`;
-    case "ray": return `ray certified at step ${fmt(cl.param)}`;
+    case "ray": return `ray proven at step ${fmt(cl.param)}`;
     case "cycle": return `period ${fmt(cl.param)}`;
     case "helix": return `helix period ${fmt(cl.param)}`;
     case "spiral": return "growing loop";
@@ -1263,7 +1263,7 @@ renderSize("3");
 
 // ---- §4 your universe ---------------------------------------------------
 // A line-for-line port of the Rust analyser (src/exact.rs, analyze_ws): event-driven, so it jumps from one
-// sign change to the next, and it returns the same certificates with the same budget.
+// sign change to the next, and it returns the same proofs with the same budget.
 function analyze(u, maxEvents = 10000, maxNorm = 2 ** 50){
   const N = u.pos.length;
   let v = fireAll(u), step = 1, events = 0, top = 0;
@@ -1324,8 +1324,8 @@ const playCards = [];
     cycle: v => `After ${fmt(v.transient)} step${v.transient === 1 ? "" : "s"} the state repeats every ${fmt(v.period)} steps. A repeated state is the proof.`,
     ray: v => `From step ${fmt(v.step)} every coordinate moves away from zero, so the velocity (${v.dir.join(", ")}) never changes again.`,
     helix: v => `From step ${fmt(v.step)} a ${v.period}-step segment replays, shifted by (${v.shift.join(", ")}) each time, without any sign changing.`,
-    spiral: v => `It keeps coming back to the same sign pattern, larger every time: ${v.returns} growing returns in a row by step ${fmt(v.step)}. This is the empirical class; no certificate proves it diverges.`,
-    undecided: v => `No certificate after ${fmt(v.events)} sign changes (step ${fmt(v.step)}). The engine leaves it open rather than guess.`,
+    spiral: v => `It keeps coming back to the same sign pattern, larger every time: ${v.returns} growing returns in a row by step ${fmt(v.step)}. This is the empirical class; nothing proves it diverges.`,
+    undecided: v => `Unproven after ${fmt(v.events)} sign changes (step ${fmt(v.step)}). The engine leaves it open rather than guess.`,
   };
   let link = "";
   // share: the reader picked this universe, so put it in the address bar; the default on load leaves the URL alone.
@@ -1349,7 +1349,7 @@ const playCards = [];
     if (c.visible && AUTOPLAY) setPlaying(c, true); else drawCard(c);
     chip.textContent = v.kind; chip.style.setProperty("--c", `var(--${kind})`);
     klass.textContent = (v.kind === "cycle" ? `period ${fmt(v.period)}` : v.kind === "helix" ? `helix period ${fmt(v.period)}` : v.kind === "fixed" ? `stops at step ${fmt(v.step)}`
-      : v.kind === "ray" ? `ray from step ${fmt(v.step)}` : v.kind === "spiral" ? "growing loop" : "no certificate") + (maxSteps >= 3200 && v.kind !== "spiral" ? " · first 3,200 steps shown" : "");
+      : v.kind === "ray" ? `ray from step ${fmt(v.step)}` : v.kind === "spiral" ? "growing loop" : "unproven") + (maxSteps >= 3200 && v.kind !== "spiral" ? " · first 3,200 steps shown" : "");
     meta.textContent = `universe ${raw} · N = ${N}`; axesEl.textContent = N > 2 ? `axes (v${axes[0]}, v${axes[1]})` : "";
     const cells = r => r.map(x => x > 0 ? "+1" : x < 0 ? "−1" : " 0").join(" ");
     verdict.style.setProperty("--c", `var(--${kind})`);

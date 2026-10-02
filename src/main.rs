@@ -442,7 +442,7 @@ fn cmd_exact(args: &Args, threads: usize) {
             .sum();
         let all: u64 = c.certified_at.values().sum();
         out.push_str(&format!(
-            "\nfixed/ray/helix certified: {within10} of {all} by step 10, latest at step {max_step}\n"
+            "\nfixed/ray/helix proven: {within10} of {all} by step 10, latest at step {max_step}\n"
         ));
     }
     if !c.spiral_examples.is_empty() {
@@ -761,7 +761,7 @@ fn fate_text(fate: &Fate) -> String {
             "spiral (empirical), {returns} growing returns in a row, |v| up to {max_norm}"
         ),
         Fate::Undecided { events, max_norm } => {
-            format!("undecided, no certificate after {events} sign changes, |v| up to {max_norm}")
+            format!("undecided, unproven after {events} sign changes, |v| up to {max_norm}")
         }
     }
 }

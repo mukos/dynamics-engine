@@ -44,8 +44,8 @@ confidence half-widths below 0.001 percentage points.
 
 Other findings:
 
-- **Every three-element universe receives a fate.** Fixed, cycle, ray and helix come with
-  certificates; spirals are the empirical remainder.
+- **Every three-element universe receives a fate.** Fixed, cycle, ray and helix are
+  proven; spirals are the empirical remainder.
 - **The longest cycle at N = 3 has period 1,510.** The longest transient plus period is 1,824 steps.
 - **Symmetry cuts the space by about 48×.** Fates are invariant under signed permutations of
   the elements, giving 873 classes at N = 2 and 8,093,160 at N = 3.
@@ -153,7 +153,7 @@ straight line. Orbits are therefore chains of straight segments that bend only o
 
 **The five fates.**
 
-| Fate | What happens | Certificate |
+| Fate | What happens | Proof |
 |---|---|---|
 | Fixed | the velocity reaches zero | `d(sign v) = 0` |
 | Cycle | the state returns to itself | a repeated state |
@@ -166,7 +166,8 @@ straight line. Orbits are therefore chains of straight segments that bend only o
 - **Event-driven analysis.** Instead of stepping, the analyser jumps straight to the next sign
   change. A four-element universe that takes 805 million steps to stop
   (`dynamics-engine show 4-1337051325212753`) is settled within the 10,000-event budget.
-- **Certificates, not step limits.** Cycles, rays and helices are proven. The helix test is the
+- **Proofs, not step limits.** Every cycle, ray and helix verdict comes with a certificate, a
+  checkable proof, rather than a guess after N steps. The helix test is the
   deterministic analogue of the Karp–Miller coverability argument for vector addition systems.
 - **Symmetry.** Canonical forms under the hyperoctahedral group (order `2^N N!`) and Burnside
   counts of the orbits.
@@ -174,7 +175,7 @@ straight line. Orbits are therefore chains of straight segments that bend only o
   workspace per thread and an index odometer took the N = 3 census from 527 s to 6.5 s.
 - **Reproducible scale.** Sampling uses a seeded SplitMix64; exhaustive runs shard across
   machines with `--offset` and `--stride` and merge with `scripts/merge-results.py`.
-- **Tests that pin the maths.** Certificates are checked against brute-force simulation, the
+- **Tests that pin the maths.** The proofs are checked against brute-force simulation, the
   odometer against index decoding, and the original TypeScript histogram is kept as a
   regression test.
 
@@ -235,7 +236,7 @@ python3 scripts/serve-docs.py       # http://127.0.0.1:8766, caching disabled
 ## Project layout
 
 ```
-src/exact.rs        reduced model, event-driven analysis, certificates, symmetry group
+src/exact.rs        reduced model, event-driven analysis, proofs, symmetry group
 src/experiments.rs  censuses, basins, basin scans, the clamped variant
 src/multiverse.rs   exhaustive and sampled runs of the original model
 src/universe.rs     one universe of the original model and its 10-step classification
@@ -243,7 +244,7 @@ src/matrix.rs       index ↔ matrix decoding, random matrices
 src/parallel.rs     fork-join helpers
 src/rng.rs          SplitMix64
 src/main.rs         command-line interface
-tests/              certificate, decoding and regression tests
+tests/              proof, decoding and regression tests
 results/            computed censuses, basin scans and orbit counts
 docs/               landing page and theory notes
 scripts/            site builders, local server, shard merging
