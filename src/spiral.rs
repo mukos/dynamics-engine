@@ -152,6 +152,7 @@ fn lap<const N: usize>(
     q: &[i128; N],
     m: i128,
     c: i128,
+    clamped: bool,
 ) -> Result<LapOk<N>, LapErr> {
     let mut v: [Aff; N] = std::array::from_fn(|e| Aff {
         a: m * q[e],
@@ -171,6 +172,9 @@ fn lap<const N: usize>(
                 continue;
             }
             let Aff { a, b } = v[e];
+            if clamped && (a < 0 || (a == 0 && b < 0)) {
+                return Err(LapErr::Fail("a coordinate would go negative"));
+            }
             if a == 0 {
                 s[e] = b.signum() as i8;
             } else {
@@ -209,7 +213,15 @@ fn lap<const N: usize>(
                 pushed_in,
             });
         }
-        let d = w.drift(&s);
+        let mut d = w.drift(&s);
+        if clamped {
+            // Elements at zero cannot be destroyed further.
+            for e in 0..N {
+                if s[e] == 0 {
+                    d[e] = d[e].max(0);
+                }
+            }
+        }
         if d.iter().all(|&x| x == 0) {
             return Err(LapErr::Fail("the lap reaches a fixed pattern"));
         }
@@ -218,6 +230,7 @@ fn lap<const N: usize>(
         }
         // Time to the next sign change: the smallest of the per-coordinate times.
         let mut times = [Aff::default(); N];
+        let mut who = [0usize; N];
         let mut n = 0;
         for e in 0..N {
             let de = d[e] as i128;
@@ -227,6 +240,7 @@ fn lap<const N: usize>(
             if s[e] == 0 {
                 if de != 0 {
                     times[n] = Aff { a: 0, b: 1 };
+                    who[n] = e;
                     n += 1;
                 }
             } else if de.signum() as i8 == -s[e] {
@@ -239,6 +253,7 @@ fn lap<const N: usize>(
                     a: a / dd,
                     b: div_ceil(b, dd),
                 };
+                who[n] = e;
                 n += 1;
             }
         }
@@ -248,7 +263,11 @@ fn lap<const N: usize>(
             .min_by_key(|t| (t.a, t.b))
             .ok_or(LapErr::Fail("only steady coordinates move"))?;
         for t in times {
-            if t.a > k.a {
+            if clamped && *t != k {
+                // A coordinate that does not hit zero now must stay clear of it:
+                // clamping would otherwise cut its value.
+                dominate(&mut y_min, *t, Aff { a: k.a, b: k.b + 1 })?;
+            } else if t.a > k.a {
                 dominate(&mut y_min, *t, k)?;
             }
         }
@@ -293,6 +312,14 @@ fn lap<const N: usize>(
                 return Err(LapErr::Fail("numbers too large"));
             }
         }
+        if clamped {
+            // Coordinates that reached zero now are clamped onto it.
+            for (t, &e) in times.iter().zip(&who[..times.len()]) {
+                if *t == k && s[e] == 1 {
+                    v[e] = Aff::default();
+                }
+            }
+        }
     }
     Err(LapErr::Fail("the lap does not return to the pattern"))
 }
@@ -310,15 +337,18 @@ pub const RETURNS: usize = 5;
 /// Try to prove that a trajectory grows forever, from its latest returns to
 /// `pattern` (oldest first; the last one is the current state). `steady` marks
 /// coordinates that kept their sign at every event over those returns.
-/// `plane` also tries two-parameter families, which is slower.
+/// `plane` also tries two-parameter families, which is slower. With `clamped`,
+/// `w` is the clamped universe's sign twin (its rows as positive channels, no
+/// negative ones) and values are clamped at zero; only lines are tried.
 pub fn prove<const N: usize>(
     w: &Reduced<N>,
     pattern: &[i8; N],
     steady: &[bool; N],
     returns: &[[i64; N]],
     plane: bool,
+    clamped: bool,
 ) -> Option<Lap<N>> {
-    explain(w, pattern, steady, returns, plane).ok()
+    explain(w, pattern, steady, returns, plane, clamped).ok()
 }
 
 /// [`prove`], with the reason when there is no proof.
@@ -328,6 +358,7 @@ pub fn explain<const N: usize>(
     steady: &[bool; N],
     returns: &[[i64; N]],
     plane: bool,
+    clamped: bool,
 ) -> Result<Lap<N>, &'static str> {
     assert!(N <= 8);
     let r0 = returns.last().ok_or("no returns")?;
@@ -353,14 +384,14 @@ pub fn explain<const N: usize>(
             }
             tried[n_tried] = q;
             n_tried += 1;
-            match prove_with(w, pattern, free, &q, r0) {
+            match prove_with(w, pattern, free, &q, r0, clamped) {
                 Ok(l) => return Ok(l),
                 Err(e) => why = e,
             }
         }
     }
     // Returns that spread over a plane: two growth directions at once.
-    if !plane {
+    if !plane || clamped {
         return Err(why);
     }
     match plane::prove(w, pattern, returns) {
@@ -379,6 +410,7 @@ fn prove_with<const N: usize>(
     steady: &[bool; N],
     q: &[i128; N],
     r0: &[i64; N],
+    clamped: bool,
 ) -> Result<Lap<N>, &'static str> {
     let e0 = (0..N).find(|&e| q[e] != 0).ok_or("no direction")?;
     let start: [i128; N] = std::array::from_fn(|e| if steady[e] { 0 } else { r0[e] as i128 });
@@ -399,7 +431,7 @@ fn prove_with<const N: usize>(
         let mut i = 0;
         while i < n_states {
             let (p, c) = states[i];
-            let ok = match lap(w, pattern, steady, &p, q, m, c) {
+            let ok = match lap(w, pattern, steady, &p, q, m, c, clamped) {
                 Ok(ok) => ok,
                 Err(LapErr::Refine(f)) => {
                     m *= f;

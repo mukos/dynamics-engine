@@ -501,6 +501,7 @@ fn prove_spiral<const N: usize>(
     log: &[([i64; N], u64, [i8; N])],
     pattern: &[i8; N],
     plane: bool,
+    clamped: bool,
 ) -> Option<Lap<N>> {
     let mut found = [[0i64; N]; spiral::RETURNS];
     let mut steady: [bool; N] = std::array::from_fn(|e| pattern[e] != 0);
@@ -520,7 +521,14 @@ fn prove_spiral<const N: usize>(
     if n < 3 {
         return None;
     }
-    spiral::prove(w, pattern, &steady, &found[spiral::RETURNS - n..], plane)
+    spiral::prove(
+        w,
+        pattern,
+        &steady,
+        &found[spiral::RETURNS - n..],
+        plane,
+        clamped,
+    )
 }
 
 #[inline]
@@ -655,7 +663,7 @@ pub fn analyze_ws<const N: usize>(
             {
                 // Two-parameter families from the fourth return: they cost more.
                 let plane = growing >= 4 && growing.is_power_of_two();
-                if let Some(proof) = prove_spiral(w, log, &s, plane) {
+                if let Some(proof) = prove_spiral(w, log, &s, plane, false) {
                     *lap = Some(proof);
                     return Fate::Spiral {
                         returns: growing,
@@ -738,6 +746,15 @@ impl<const N: usize> Clamped<N> {
         v.map(|x| x.max(0))
     }
 
+    /// The sign-model universe with these rows as positive channels and silent
+    /// negative ones: it moves exactly like this one until a value would go negative.
+    pub fn twin(&self) -> Reduced<N> {
+        Reduced {
+            pos: self.rows,
+            neg: [[0; N]; N],
+        }
+    }
+
     #[inline]
     pub fn drift(&self, v: &[i64; N]) -> [i64; N] {
         let mut d = [0i64; N];
@@ -776,13 +793,14 @@ pub fn analyze_clamped_ws<const N: usize>(
     let mut step = 1u64;
     let mut events = 0u64;
     let mut max_norm = 0i64;
+    let mut last_growing = 0u64;
     ws.clear();
     let Workspace {
         log,
         seen,
         returns,
         attractor,
-        ..
+        lap,
     } = ws;
     loop {
         let d = c.drift(&v);
@@ -842,12 +860,18 @@ pub fn analyze_clamped_ws<const N: usize>(
         log.push((v, step, support));
         if budget.spiral_returns > 0 {
             let growing = growing_returns(returns, &support, &v);
-            if growing >= budget.spiral_returns {
-                return Fate::Spiral {
-                    returns: growing,
-                    max_norm,
-                    proven: false,
-                };
+            last_growing = growing;
+            // The same lap proof as in the sign model, on the sign twin with clamping.
+            if growing >= 2 && (growing <= 4 || growing.is_power_of_two()) && growing <= MAX_ATTEMPT
+            {
+                if let Some(proof) = prove_spiral(&c.twin(), log, &support, false, true) {
+                    *lap = Some(proof);
+                    return Fate::Spiral {
+                        returns: growing,
+                        max_norm,
+                        proven: true,
+                    };
+                }
             }
         }
         let mut k = u64::MAX;
@@ -868,6 +892,15 @@ pub fn analyze_clamped_ws<const N: usize>(
         step += k;
         events += 1;
         if events >= budget.max_events || max_norm >= budget.max_norm {
+            // As in the sign model: growth alone is no proof, so a spiral is only
+            // called when the budget runs out while every return still grows.
+            if budget.spiral_returns > 0 && last_growing >= budget.spiral_returns {
+                return Fate::Spiral {
+                    returns: last_growing,
+                    max_norm,
+                    proven: false,
+                };
+            }
             return Fate::Undecided { events, max_norm };
         }
     }

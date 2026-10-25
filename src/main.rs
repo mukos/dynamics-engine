@@ -3,12 +3,13 @@ use std::process::exit;
 use std::time::{Duration, Instant};
 
 use dynamics_engine::exact::{
-    analyze_clamped_traced, analyze_ws, matrix_orbits, reduced_orbits, Budget, Clamped, Fate,
-    Reduced, Workspace,
+    analyze_clamped_ws, analyze_ws, matrix_orbits, reduced_orbits, Budget, Clamped, Fate, Reduced,
+    Workspace,
 };
 use dynamics_engine::experiments::{
     basin_map, basin_scan, basins, census_clamped, census_exhaustive, census_sampled, class_name,
-    stability_census, BasinMap, Basins, Census, StabilityCensus,
+    stability_census, variants_census, BasinMap, Basins, Census, StabilityCensus, VariantsCensus,
+    VARIANTS,
 };
 use dynamics_engine::global::{stability, Stability};
 use dynamics_engine::matrix::{enumerable, matrix_count, MAX_CHANNELS};
@@ -30,6 +31,7 @@ Commands:
   basinmap     the attractor each start in a box reaches, for one universe (--index)
   basinscan    basin maps and pattern features of every canonical universe
   stable       is every start bounded? one universe (stable <id>) or a census (--size N)
+  variants     create/destroy rules with and without clamping at zero, compared
   orbits       symmetry orbit counts (Burnside)
   run          the original 10-step signature histogram (legacy model)
 
@@ -206,6 +208,7 @@ fn parse_args() -> Result<Args, String> {
         "basinmap",
         "basinscan",
         "stable",
+        "variants",
     ]
     .contains(&args.command.as_str())
     {
@@ -286,6 +289,7 @@ fn main() {
         "basinmap" => return cmd_basinmap(&args),
         "basinscan" => return cmd_basinscan(&args, exec.threads),
         "stable" => return cmd_stable(&args, exec.threads),
+        "variants" => return cmd_variants(&args, exec.threads),
         _ => {}
     }
 
@@ -738,7 +742,11 @@ fn cmd_show(args: &Args) {
                 for f in 0..$n {
                     out.push_str(&format!("  row {f}: [{} ]\n", fmt(&c.rows[f].map(|x| x as i64))));
                 }
-                analyze_clamped_traced(&c, start_of(c.initial_state()), b, &mut trace)
+                let fate = analyze_clamped_ws(&c, start_of(c.initial_state()), b, &mut ws, &mut trace);
+                if let Some(l) = &ws.lap {
+                    lap_text = lap_description(l);
+                }
+                fate
             } else {
                 let w = Reduced::<$n>::from_index(args.index);
                 out.push_str(&format!(
@@ -1050,6 +1058,54 @@ fn cmd_stable(args: &Args, threads: usize) {
     for (k, v) in &c.examples {
         out.push_str(&format!("{k} examples (reduced indices): {v:?}\n"));
     }
+    print!("{out}");
+}
+
+fn cmd_variants(args: &Args, threads: usize) {
+    if args.size > 4 {
+        eprintln!("error: variants supports sizes 1 to 4");
+        exit(2);
+    }
+    let started = Instant::now();
+    let b = budget(args);
+    let c: VariantsCensus =
+        with_channels!(args.size, C => variants_census::<{ C / 2 }>(b, threads));
+    let elapsed = started.elapsed().as_secs_f64();
+    let n = c.universes.max(1) as f64;
+    let mut out = format!(
+        "create/destroy variants, size {}: {} row matrices in {elapsed:.2}s on {threads} threads\n\
+         each element has one row of create (+1) / destroy (-1) entries; every row fires once to start\n\n",
+        args.size, c.universes
+    );
+    let kinds = ["fixed", "cycle", "ray", "helix", "spiral", "undecided"];
+    out.push_str(&format!("  {:<10}", "rule"));
+    for k in kinds {
+        out.push_str(&format!(" {k:>10}"));
+    }
+    out.push_str("   same fate as clamped\n");
+    let rules = [
+        "fires while v > 0, clamped at 0",
+        "fires while v > 0, may go negative",
+        "fires the same row while v != 0",
+        "fires the negated row while v < 0",
+    ];
+    for (i, v) in VARIANTS.iter().enumerate() {
+        out.push_str(&format!("  {v:<10}"));
+        for k in kinds {
+            let x = c.fates.get(&(*v, k)).copied().unwrap_or(0);
+            out.push_str(&format!(" {:>9.3}%", 100.0 * x as f64 / n));
+        }
+        match c.agree.get(v) {
+            Some(a) => out.push_str(&format!("   {:>6.2}%", 100.0 * *a as f64 / n)),
+            None => out.push_str("        -"),
+        }
+        out.push_str(&format!("   ({})\n", rules[i]));
+    }
+    out.push_str(&format!(
+        "\nthe positive rule never goes negative (so equals the clamped run) for {:.2}% of matrices\n\
+         the unclamped rules are sign-model universes with d- = 0, d+ or -d+; only clamping makes a new system\n",
+        100.0 * c.never_negative as f64 / n
+    ));
     print!("{out}");
 }
 

@@ -410,3 +410,47 @@ fn global_stability() {
         }
     ));
 }
+
+#[test]
+fn clamped_spiral_proof() {
+    use dynamics_engine::exact::{analyze_clamped_ws, Clamped, Workspace};
+    // Mass rotates 1 → 3 → 2 → 1 and every hand-off adds 1: x ↦ x + 3 per lap.
+    let c = Clamped::<4>::from_index(1_313_908);
+    let mut ws = Workspace::<4>::new();
+    let start = c.initial_state();
+    let fate = analyze_clamped_ws(&c, start, Budget::default(), &mut ws, &mut |_, _, _| {});
+    assert!(
+        matches!(fate, Fate::Spiral { proven: true, .. }),
+        "{fate:?}"
+    );
+    let lap = ws.lap.expect("a lap");
+    assert_eq!((lap.slope[0][0], lap.off[0], lap.den), (1, 3, 1));
+    // It keeps growing far beyond the proof.
+    let long = Budget {
+        spiral_returns: 0,
+        max_events: 30_000,
+        max_norm: 1 << 62,
+    };
+    let f = analyze_clamped_ws(&c, start, long, &mut ws, &mut |_, _, _| {});
+    assert!(matches!(f, Fate::Undecided { .. }), "{f:?}");
+}
+
+#[test]
+fn create_destroy_variants_are_sign_universes() {
+    use dynamics_engine::exact::{analyze_clamped, Clamped};
+    // Firing only while positive, without clamping, is the sign model with silent
+    // negative channels: identical to the clamped run while nothing goes negative.
+    let b = Budget::default();
+    for k in 0..Clamped::<2>::count() as u64 {
+        let c = Clamped::<2>::from_index(k);
+        let start = c.initial_state();
+        let mut negative = false;
+        let twin =
+            dynamics_engine::exact::analyze_traced(&c.twin(), start, 1, b, &mut |_, v, _| {
+                negative |= v.iter().any(|&x| x < 0)
+            });
+        if !negative {
+            assert_eq!(twin.kind(), analyze_clamped(&c, start, b).kind(), "{k}");
+        }
+    }
+}

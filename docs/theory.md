@@ -323,15 +323,51 @@ hard part, and it is provably hard:
 
 ## 7. The create/destroy variant
 
-`--model clamped`: one channel per element, active while `v_e > 0`; a row
-carries create (+1) / destroy (−1) per target; `v_e ← max(0, v_e + drift)`.
-It is not the same generative system: it has far more fixed points (a
-destroyed element stays at zero instead of becoming negative and firing its
-other channel), no cycles at all for `N ≤ 2`, and helices/spirals appear one
-size later. Its state space is `ℕ^N`, which makes it a Petri-net-like object
-where boundedness is decidable in principle; the sign model's `ℤ^N` with sign
-switching is the PCD-like object where it is not. The two models coincide only
-on trajectories that never go negative.
+The original model already creates and destroys: after the reduction every
+drift entry is `+1` (create), `−1` (destroy) or `0`. What a create/destroy
+model changes is *who fires and where values may go*. Each element gets one
+row of create/destroy entries (`3^(N²)` universes), and there are four natural
+rules (`variants` command, `results/variants-size*.txt`):
+
+| rule | fires | values | as a sign-model universe |
+|---|---|---|---|
+| `clamped` (`--model clamped`) | while `v_e > 0` | clamped at 0 | none: a new system |
+| `positive` | while `v_e > 0` | may go negative | `d⁺` = rows, `d⁻` = 0 |
+| `same` | while `v_e ≠ 0` | may go negative | `d⁺` = `d⁻` = rows |
+| `negated` | the row while `v_e > 0`, its negation while `v_e < 0` | may go negative | `d⁺` = rows, `d⁻` = −rows |
+
+**Without clamping it is the original model.** Once values may go negative, an
+element's behaviour is a function of its sign, which is exactly what `d⁺` and
+`d⁻` describe; each unclamped rule is a slice of the `3^(2N²)` original
+universes with `d⁻` tied to `d⁺`. Only the floor at zero makes a different
+system. Fates at size 3 (every row fires once to start):
+
+| rule | fixed | cycle | ray | helix | spiral | same fate as clamped |
+|---|---|---|---|---|---|---|
+| clamped | 40.71 % | 0.78 % | 58.11 % | 0.41 % | 0 | — |
+| positive | 31.41 % | 0.15 % | 67.75 % | 0.69 % | 0 | 89.5 % |
+| same | 4.73 % | 0.12 % | 95.15 % | 0 | 0 | 62.0 % |
+| negated | 16.40 % | 8.79 % | 66.52 % | 2.59 % | 5.70 % | 67.0 % |
+
+So clamping does change the generative results. The `positive` rule agrees
+with the clamped one whenever no value goes negative, and in 89.5 % of
+universes overall; the gap is mostly rays of the unclamped run that clamping
+turns into fixed points (a destroyed element stays at zero and falls silent).
+The `negated` rule is odd-symmetric, `d(−v) = −d(v)`, and that is where loops
+live: 5.7 % spirals and 8.8 % cycles against 0.07 % and 0.95 % in the full
+sign model. The sign rotation of §2b (`2-2800`) is such a universe. Size 4
+(all 43 046 721 row matrices, 795 s) keeps the pattern: `positive` agrees with
+`clamped` in 88.6 %, `same` in 69.3 %, and `negated` has 7.6 % spirals, 5.8 %
+cycles and 6.2 % helices.
+
+The clamped model's state space is `ℕ^N`, which makes it a Petri-net-like
+object where boundedness is decidable in principle; the sign model's `ℤ^N` with
+sign switching is the PCD-like object where it is not. Its spirals are proven
+by the same lap lemma (§2) run on the sign twin with clamping (a coordinate
+that reaches zero lands on 0, every other one must stay positive): all 4 824
+spirals among the 43 046 721 four-element clamped universes are proven, e.g.
+`show 4-1313908 --model clamped`, where mass rotates 1 → 3 → 2 → 1 and gains 1
+at every hand-off (`x ↦ x + 3`).
 
 ## 8. Efficiency: what mattered and what would not
 

@@ -1,0 +1,11 @@
+create/destroy variants, size 2: 81 row matrices in 0.00s on 8 threads
+each element has one row of create (+1) / destroy (-1) entries; every row fires once to start
+
+  rule            fixed      cycle        ray      helix     spiral  undecided   same fate as clamped
+  clamped       56.790%     0.000%    43.210%     0.000%     0.000%     0.000%        -   (fires while v > 0, clamped at 0)
+  positive      49.383%     0.000%    50.617%     0.000%     0.000%     0.000%    92.59%   (fires while v > 0, may go negative)
+  same          16.049%     0.000%    83.951%     0.000%     0.000%     0.000%    59.26%   (fires the same row while v != 0)
+  negated       39.506%     7.407%    50.617%     0.000%     2.469%     0.000%    77.78%   (fires the negated row while v < 0)
+
+the positive rule never goes negative (so equals the clamped run) for 37.04% of matrices
+the unclamped rules are sign-model universes with d- = 0, d+ or -d+; only clamping makes a new system

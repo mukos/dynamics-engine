@@ -61,6 +61,11 @@ Other findings:
 - **At N = 2 stability has a closed form.** A two-element universe is bounded from every start
   exactly when no sign pattern is absorbing (drift nonzero and keeping every sign), except
   for the sign rotation `d = ±(sgn v₁, −sgn v₀)`, which spirals out by 1 per axis crossing.
+- **Create/destroy is the same system unless values are clamped at zero.** Letting an element
+  create and destroy, and letting values go negative, gives a slice of the original universes.
+  Clamping at zero is a genuinely different system: fixed points take over, and at N = 3 the
+  fate differs from the unclamped rule in 10 % of universes. Its spirals are proven by the
+  same lap argument.
 - **The longest cycle at N = 3 has period 1,714.** The longest transient plus period is 3,771 steps.
 - **Symmetry cuts the space by about 48×.** Fates are invariant under signed permutations of
   the elements, giving 873 classes at N = 2 and 8,093,160 at N = 3.
@@ -213,6 +218,7 @@ Run `dynamics-engine` with no arguments for the full help.
 | `basinscan --size N` | basin maps and pattern features of every canonical universe |
 | `stable <N-index>` | is every start bounded? an escaping start, or a proof (N ≤ 2) |
 | `stable --size N` | the same for every universe of one size (N ≤ 3) |
+| `variants --size N` | create/destroy rules with and without clamping at zero, compared |
 | `orbits --size N` | symmetry orbit counts (Burnside) |
 | `run --size N` | the original 10-step signature histogram (legacy) |
 

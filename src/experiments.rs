@@ -927,3 +927,75 @@ pub fn stability_census<const N: usize>(budget: Budget, threads: usize) -> Stabi
         StabilityCensus::merge,
     )
 }
+
+// ---------------------------------------------------------------------------
+// Create / destroy variants: does clamping at zero matter?
+
+/// The four create/destroy rules compared by [`variants_census`]. Every element
+/// has one row of create (+1) / destroy (−1) entries.
+pub const VARIANTS: [&str; 4] = [
+    "clamped",  // fires while v > 0, values clamped at 0 (`--model clamped`)
+    "positive", // fires while v > 0, values may go negative
+    "same",     // fires the same row while v ≠ 0
+    "negated",  // fires the row while v > 0 and its negation while v < 0
+];
+
+/// Fates of every row matrix under each variant, all started by firing every row
+/// once. The unclamped variants are sign-model universes with `d⁺` = the rows and
+/// `d⁻` = 0, the rows, or minus the rows.
+#[derive(Default, Clone, Debug)]
+pub struct VariantsCensus {
+    pub universes: u64,
+    /// (variant, fate kind) -> count.
+    pub fates: BTreeMap<(&'static str, &'static str), u64>,
+    /// variant -> universes whose fate kind matches the clamped one.
+    pub agree: BTreeMap<&'static str, u64>,
+    /// Universes where the "positive" variant never goes negative (so it is the clamped run).
+    pub never_negative: u64,
+}
+
+pub fn variants_census<const N: usize>(budget: Budget, threads: usize) -> VariantsCensus {
+    par_chunks(
+        Clamped::<N>::count() as u64,
+        threads,
+        VariantsCensus::default,
+        |first, len, acc| {
+            let mut ws = Workspace::<N>::new();
+            for k in first..first + len {
+                let c = Clamped::<N>::from_index(k);
+                let start: [i64; N] =
+                    std::array::from_fn(|e| (0..N).map(|f| c.rows[f][e] as i64).sum());
+                let clamped =
+                    analyze_clamped_ws(&c, c.initial_state(), budget, &mut ws, &mut |_, _, _| {})
+                        .kind();
+                acc.universes += 1;
+                *acc.fates.entry((VARIANTS[0], clamped)).or_insert(0) += 1;
+                let neg: [[[i8; N]; N]; 3] = [[[0; N]; N], c.rows, c.rows.map(|r| r.map(|x| -x))];
+                for (i, neg) in neg.into_iter().enumerate() {
+                    let w = Reduced::<N> { pos: c.rows, neg };
+                    let mut negative = false;
+                    let fate = analyze_ws(&w, start, 1, budget, &mut ws, &mut |_, v, _| {
+                        negative |= v.iter().any(|&x| x < 0)
+                    })
+                    .kind();
+                    let name = VARIANTS[i + 1];
+                    *acc.fates.entry((name, fate)).or_insert(0) += 1;
+                    *acc.agree.entry(name).or_insert(0) += (fate == clamped) as u64;
+                    if i == 0 && !negative {
+                        acc.never_negative += 1;
+                    }
+                }
+            }
+        },
+        |a, o| {
+            a.universes += o.universes;
+            a.never_negative += o.never_negative;
+            for (k, n) in o.fates {
+                *a.fates.entry(k).or_insert(0) += n;
+            }
+            for (k, n) in o.agree {
+                *a.agree.entry(k).or_insert(0) += n;
+            }
+        },
+    )
+}

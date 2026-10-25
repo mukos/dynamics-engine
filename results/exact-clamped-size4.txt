@@ -1,11 +1,11 @@
-model clamped, size 4: 43046721 reduced universes (4294967296 bit matrices) in 6.49s on 2 threads
+model clamped, size 4: 43046721 reduced universes (4294967296 bit matrices) in 0.54s on 8 threads
 
 fate          reduced universes        bit-matrix weighted
-  cycle              377184   0.88%               15845340   0.37%
-  fixed            12521834  29.09%             1530172293  35.63%
-  helix              545020   1.27%               19674288   0.46%
-  ray              29597859  68.76%             2729006191  63.54%
-  spiral               4824   0.01%                 269184   0.01%
+  cycle              377184   0.876%               15845340   0.369%
+  fixed            12521834  29.089%             1530172293  35.627%
+  helix              545020   1.266%               19674288   0.458%
+  ray              29597859  68.758%             2729006191  63.540%
+  spiral               4824   0.011%                 269184   0.006%
 
 cycle periods (reduced universes):
   period    2: 224832
@@ -30,8 +30,9 @@ cycle periods (reduced universes):
   period   28: 24
   period   39: 24
   period   47: 24
-  longest transient+period: 54 (reduced index 4679752)
+  longest transient+period: 54 (reduced index 11054806)
 
-fixed/ray/helix certified: 42653313 of 42664713 by step 10, latest at step 25
+fixed/ray/helix proven: 42653313 of 42664713 by step 10, latest at step 25
 
-spiral examples (reduced indices): [1136761, 1136788, 1136815, 1138948, 1138975, 1161721, 1161748, 1161775, 1163908, 1163935]
+spirals proven to grow forever: 4824 of 4824
+spiral examples (reduced indices): [1350072, 1423546, 2908231, 2908258, 2908285, 2910418, 2910445, 2933191, 2933218, 2935378]
