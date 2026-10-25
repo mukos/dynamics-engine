@@ -1,17 +1,11 @@
-model sign, size 3: 387420489 reduced universes (68719476736 bit matrices) in 527.58s on 8 threads
+model sign, size 3: 387420489 reduced universes (68719476736 bit matrices) in 9.39s on 8 threads
 
 fate          reduced universes        bit-matrix weighted
-  cycle             3684504   0.95%              362676240   0.53%
-  fixed            27800807   7.18%             7345459384  10.69%
-  helix             5025024   1.30%              420144840   0.61%
-  ray             350630026  90.50%            60545608896  88.11%
-  spiral             280128   0.07%               45587376   0.07%
-
-10-step heuristic verdict vs exact fate (bit-matrix weighted):
-  heuristic              fixed           cycle             ray           helix          spiral       undecided
-  terminated             5.53%           0.00%           0.00%           0.00%           0.00%           0.00%
-  bounded                5.12%           0.43%           0.01%           0.05%           0.00%           0.00%
-  growth                 0.03%           0.10%          88.10%           0.56%           0.07%           0.00%
+  cycle             3687240   0.952%              362804112   0.528%
+  fixed            27800807   7.176%             7345459384  10.689%
+  helix             5025024   1.297%              420144840   0.611%
+  ray             350630074  90.504%            60545609280  88.105%
+  spiral             277344   0.072%               45459120   0.066%
 
 cycle periods (reduced universes):
   period    2: 815640
@@ -70,26 +64,26 @@ cycle periods (reduced universes):
   period   55: 576
   period   56: 528
   period   57: 432
-  period   58: 480
+  period   58: 528
   period   59: 816
   period   60: 528
-  period   61: 528
+  period   61: 960
   period   62: 384
   period   63: 432
-  period   64: 480
-  period   65: 288
+  period   64: 528
+  period   65: 432
   period   66: 432
   period   67: 528
   period   68: 384
-  period   69: 336
-  period   70: 576
-  period   71: 336
+  period   69: 384
+  period   70: 624
+  period   71: 384
   period   72: 240
   period   73: 144
-  period   74: 192
-  period   75: 624
+  period   74: 288
+  period   75: 672
   period   76: 432
-  period   77: 240
+  period   77: 288
   period   78: 144
   period   79: 96
   period   80: 240
@@ -102,33 +96,33 @@ cycle periods (reduced universes):
   period   87: 144
   period   88: 192
   period   89: 144
-  period   90: 96
-  period   91: 240
+  period   90: 144
+  period   91: 336
   period   92: 240
   period   93: 192
   period   94: 192
-  period   95: 144
-  period   96: 48
+  period   95: 192
+  period   96: 96
   period   97: 48
   period   98: 240
-  period   99: 192
+  period   99: 240
   period  100: 144
-  period  101: 96
+  period  101: 144
   period  102: 96
-  period  104: 144
+  period  104: 192
   period  105: 96
-  period  106: 144
+  period  106: 192
   period  107: 48
   period  108: 144
   period  109: 48
   period  110: 48
-  period  111: 48
+  period  111: 96
   period  113: 48
   period  114: 144
   period  115: 48
   period  116: 96
-  period  117: 96
-  period  119: 48
+  period  117: 144
+  period  119: 96
   period  120: 48
   period  122: 48
   period  123: 48
@@ -137,39 +131,61 @@ cycle periods (reduced universes):
   period  128: 192
   period  130: 48
   period  131: 48
-  period  134: 48
+  period  133: 48
+  period  134: 96
   period  135: 48
   period  136: 96
+  period  138: 48
+  period  139: 48
   period  140: 96
   period  141: 48
   period  142: 48
   period  143: 48
+  period  146: 48
   period  148: 144
   period  151: 48
   period  152: 48
   period  155: 48
   period  156: 96
+  period  157: 48
+  period  159: 48
   period  160: 48
   period  162: 48
-  period  164: 96
+  period  164: 144
   period  176: 48
   period  178: 96
   period  179: 48
+  period  182: 48
   period  184: 48
+  period  209: 48
+  period  211: 48
   period  213: 48
-  period  214: 96
+  period  214: 144
+  period  220: 48
+  period  221: 48
+  period  222: 48
   period  232: 48
   period  233: 48
+  period  243: 48
+  period  247: 48
+  period  250: 48
   period  256: 48
+  period  258: 48
   period  270: 48
   period  286: 48
+  period  308: 48
   period  320: 48
   period  351: 48
+  period  352: 48
   period  367: 48
+  period  448: 48
+  period  576: 48
   period 1510: 48
-  longest transient+period: 1824 (reduced index 7894996)
+  period 1714: 48
+  longest transient+period: 3771 (reduced index 81866077)
 
-fixed/ray/helix certified: 382336017 of 383455857 by step 10, latest at step 668
+fixed/ray/helix proven: 382336017 of 383455905 by step 10, latest at step 668
 
+spirals proven to grow forever: 277152 of 277344
 spiral examples (reduced indices): [116065, 116299, 136399, 144965, 144968, 144971, 144974, 144977, 144980, 149518]
-exit 0
+unproven spiral examples (reduced indices): [12194199, 12608791, 12667841, 82397517, 123872353, 136966875, 157679869, 157699555, 165965103, 171673035]

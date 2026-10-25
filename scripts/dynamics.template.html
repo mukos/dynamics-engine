@@ -196,6 +196,12 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 .fact{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
 .fact b{display:block;font:500 28px/1.1 var(--mono);font-variant-numeric:tabular-nums;color:var(--ink)}
 .fact span{font-size:14px;color:var(--ink-2)}
+.stab{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:40px;align-items:start;margin-top:48px}
+@media (max-width:900px){.stab{grid-template-columns:1fr;gap:20px}}
+.stab h3{font-family:var(--serif);font-weight:500;font-size:26px;margin:0 0 10px}
+.stab-text p{color:var(--ink-2);margin:0 0 12px}
+.open{background:repeating-linear-gradient(135deg,var(--axis) 0 3px,var(--card) 3px 6px)}
+.legend i.open{border:1px solid var(--axis)}
 
 /* ---------- explorer ---------- */
 .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:36px 0 22px}
@@ -405,7 +411,7 @@ footer p{color:var(--ink-3);font-size:14px}
     </div>
     <div class="hero-stats">
       <div><b data-count="387420489">0</b><span>universes at N = 3</span></div>
-      <div><b data-count="6.6" data-dec="1" data-suffix=" s">0</b><span>for the full census</span></div>
+      <div><b data-count="9.4" data-dec="1" data-suffix=" s">0</b><span>for the full census</span></div>
       <div><b data-count="5">0</b><span>possible fates</span></div>
       <div><b data-count="0">0</b><span>runtime dependencies</span></div>
     </div>
@@ -419,7 +425,7 @@ footer p{color:var(--ink-3);font-size:14px}
   <span class="sec-no">§1</span>
   <p class="eyebrow reveal">Live, from the zero state</p>
   <h2 class="reveal">Five <i>fates</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 9C90 14 170 4 250 9s100-2 142 0"/></svg></h2>
-  <p class="sub reveal">Every orbit ends in one of five ways. Four are proven exactly; the fifth is the honest remainder, recognised from growth the engine cannot yet prove. Each card is a real three-element universe, simulated in your browser.</p>
+  <p class="sub reveal">Every orbit ends in one of five ways. Each is proven, not guessed: spirals by running one lap with the size left as an unknown, which settles all but 192 of the 277,344 three-element spirals. Each card is a real three-element universe, simulated in your browser.</p>
   <div class="fates" id="fatesRow" aria-label="the five fates"></div>
   <div class="swipe" aria-hidden="true">swipe for all five →</div>
   <div class="viewbar reveal">
@@ -468,8 +474,25 @@ footer p{color:var(--ink-3);font-size:14px}
     <div class="facts">
       <div class="fact reveal d1"><b data-count="0">0</b><span>undecided universes at <span class="mi">N</span> = 3: every one of 387,420,489 receives a fate</span></div>
       <div class="fact reveal d2"><b data-count="8093160">0</b><span>symmetry classes at <span class="mi">N</span> = 3, under signed permutations of the elements (order <span class="math">2<sup><i>N</i></sup><i>N</i>!</span>)</span></div>
-      <div class="fact reveal d3"><b data-count="1510">0</b><span>steps in the longest cycle at <span class="mi">N</span> = 3, reached from the zero state</span></div>
-      <div class="fact reveal d4"><b data-count="59" data-suffix=" M/s">0</b><span>universes per second for the sampled <span class="mi">N</span> = 4 census, where exhaustive search would take about a year</span></div>
+      <div class="fact reveal d3"><b data-count="1714">0</b><span>steps in the longest cycle at <span class="mi">N</span> = 3, reached from the zero state</span></div>
+      <div class="fact reveal d4"><b data-count="277152">0</b><span>three-element spirals proven to grow forever, out of 277,344</span></div>
+    </div>
+  </div>
+  <div class="stab">
+    <div class="stab-text reveal">
+      <h3>Stable from <i>every</i> start?</h3>
+      <p>The census follows one start. A universe is <b>stable</b> when every start in the whole lattice ends fixed or in a cycle. One escaping start proves it unstable. For two elements a far-field argument proves the rest bounded, so every one of them is decided.</p>
+      <p>At <span class="mi">N</span> = 2 the answer is a formula: stable exactly when no sign pattern's velocity keeps every sign, except the sign rotation <span class="math"><i>d</i> = (sgn <i>v</i><sub>1</sub>, −sgn <i>v</i><sub>0</sub>)</span>, which gains one step per axis crossing and spirals out (<a href="#u=2-2800">2-2800</a>, from (−3, −3) in the CLI).</p>
+    </div>
+    <div class="chart reveal d1" aria-label="stability from every start">
+      <div class="legend"><span><i style="background:var(--cycle)"></i>bounded from every start</span><span><i style="background:var(--ray)"></i>some start escapes</span><span><i class="open"></i>no escape found, no proof</span></div>
+      <div class="crow"><div class="clab">N = 2<small>6,561 universes</small></div>
+        <div><div class="cbar"><span style="flex:13.047;background:var(--cycle)" title="bounded: 856 (13.05%)"></span><span style="flex:86.953;background:var(--ray)" title="unstable: 5,705 (86.95%)"></span></div>
+        <div class="csmall">856 bounded (13.05 %, proven) · 5,705 unstable · 0 open</div></div></div>
+      <div class="crow"><div class="clab">N = 3<small>387,420,489 universes</small></div>
+        <div><div class="cbar"><span style="flex:97.539;background:var(--ray)" title="unstable: 377,886,315 (97.54%)"></span><span class="open" style="flex:2.461" title="open: 9,534,174 (2.46%)"></span></div>
+        <div class="csmall">97.54 % unstable (proven) · 2.46 % open</div></div></div>
+      <p class="csmall">A cycle from the zero state often hides instability: 37 % of those three-element universes escape from some other start.</p>
     </div>
   </div>
 </section>
@@ -533,13 +556,14 @@ events:
 <span class="hl">fate: cycle of period 10, repeating from step 6</span>
 
 <span class="p">$</span> dynamics-engine exact --size 3
-model sign, size 3: 387420489 reduced universes in 6.03s on 8 threads
+model sign, size 3: 387420489 reduced universes in 9.39s on 8 threads
 fate          reduced universes
-  cycle             3684504   0.951%
+  cycle             3687240   0.952%
   fixed            27800807   7.176%
   helix             5025024   1.297%
-  ray             350630026  90.504%
-  spiral             280128   0.072%</pre>
+  ray             350630074  90.504%
+  spiral             277344   0.072%
+spirals proven to grow forever: 277152 of 277344</pre>
   </div>
   <div class="cta-row reveal">
     <a class="btn primary" href="https://github.com/mukos/dynamics-engine"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>Source on GitHub</a>
@@ -555,13 +579,13 @@ fate          reduced universes
   <h2 class="reveal">The <i>engineering</i><svg class="uline" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4 9C80 13 160 3 240 8s112 1 152-1"/></svg></h2>
   <p class="sub reveal">A dependency-free Rust codebase that turns an exponential search into seconds: reduce the space, prove instead of simulate, and keep the hot loop out of the allocator's way.</p>
   <div class="eng">
-    <div class="ecard reveal d1"><div class="hand">exact, not simulated</div><h3>Event-driven certificates</h3><p>The analyser jumps from one sign change to the next instead of stepping, and stops at a certificate: a checkable proof of the fate. A repeated state proves a cycle; a quadrant the velocity cannot leave proves a ray; a replayed segment <span class="math"><i>v</i>(<i>t</i>+<i>T</i>) = <i>v</i>(<i>t</i>) + <i>D</i></span> proves a helix.</p></div>
+    <div class="ecard reveal d1"><div class="hand">exact, not simulated</div><h3>Event-driven certificates</h3><p>The analyser jumps from one sign change to the next instead of stepping, and stops at a certificate: a checkable proof of the fate. A repeated state proves a cycle; a quadrant the velocity cannot leave proves a ray; a replayed segment <span class="math"><i>v</i>(<i>t</i>+<i>T</i>) = <i>v</i>(<i>t</i>) + <i>D</i></span> proves a helix; one lap run with the size as an unknown, <span class="math"><i>x</i> ↦ <i>a</i><i>x</i> + <i>b</i></span>, proves a spiral.</p></div>
     <div class="ecard reveal d2"><div class="hand">symmetry</div><h3>Canonical forms</h3><p>Fates are invariant under the hyperoctahedral group of signed permutations. Burnside's lemma counts the orbits: 873 classes at <span class="mi">N</span> = 2, 8,093,160 at <span class="mi">N</span> = 3.</p></div>
     <div class="ecard reveal d3"><div class="hand">reduction</div><h3>From bits to ternary rows</h3><p>Only differences between paired channels matter, so <span class="math">2<sup>4<i>N</i>²</sup></span> bit matrices collapse to <span class="math">3<sup>2<i>N</i>²</sup></span> universes, each carrying a multiplicity of <span class="math">2<sup>zeros</sup></span>.</p></div>
     <div class="ecard wide reveal d1" id="perfCard"><div class="hand">performance</div><h3>Out of the allocator's way</h3><p>Static musl builds serialise threads on <code>malloc</code>. Reusing one workspace per thread and walking indices with an odometer removed every allocation from the hot loop. Size-3 census on 8 cores:</p>
       <div class="pbars">
         <div class="pbar"><span>first Rust version</span><span class="track"><span class="fill" style="width:calc(100% - 64px);background:var(--axis)"></span><b>527 s</b></span></div>
-        <div class="pbar"><span>allocation-free loop</span><span class="track"><span class="fill" style="width:max(6px,calc((100% - 64px) * 6.6 / 527));background:var(--cycle)"></span><b>6.6 s</b></span></div>
+        <div class="pbar"><span>allocation-free loop</span><span class="track"><span class="fill" style="width:max(6px,calc((100% - 64px) * 9.4 / 527));background:var(--cycle)"></span><b>9.4 s</b></span></div>
       </div>
       <div class="hand" style="font-size:20px;margin-top:6px">80× faster, same answers</div></div>
     <div class="ecard reveal d2"><div class="hand">verified</div><h3>Tests that pin the maths</h3><p>The proofs are checked against brute-force simulation, the index odometer against decoding, and the original TypeScript histogram is kept as a regression test.</p></div>
@@ -588,14 +612,14 @@ fate          reduced universes
         <table>
           <tr><td><i>A</i> = <i>I</i>, <i>b</i> = 0</td><td>the state comes back exactly: a <b style="color:var(--cycle)">cycle</b></td></tr>
           <tr><td><i>A</i> = <i>I</i>, <i>b</i> ≠ 0</td><td>it comes back shifted by the same vector: a <b style="color:var(--helix)">helix</b></td></tr>
-          <tr><td>ρ(<i>A</i>) &gt; 1</td><td>each return is larger, like <i>x</i> ↦ 2<i>x</i> + 13: a <b style="color:var(--spiral)">spiral</b></td></tr>
+          <tr><td>ρ(<i>A</i>) &gt; 1</td><td>each return is larger, like <i>x</i> ↦ 2<i>x</i> + 12: a <b style="color:var(--spiral)">spiral</b></td></tr>
           <tr><td>no loop at all</td><td>a quadrant it never leaves: a <b style="color:var(--ray)">ray</b>; zero velocity: <b style="color:var(--fixed)">fixed</b></td></tr>
         </table>
       </div>
     </div>
   </div>
   <div class="refs">
-    <div class="ref reveal d1"><b>Piecewise-constant derivatives</b><span>The continuous cousin: reachability is decidable in two dimensions and undecidable from three, which is why spirals stay empirical.</span><cite>Asarin, Maler, Pnueli (1995)</cite></div>
+    <div class="ref reveal d1"><b>Piecewise-constant derivatives</b><span>The continuous cousin: reachability is decidable in two dimensions and undecidable from three, which is why a few spirals still resist proof.</span><cite>Asarin, Maler, Pnueli (1995)</cite></div>
     <div class="ref reveal d2"><b>Glass networks</b><span>Gene-regulation models whose vector field depends only on which side of thresholds each variable lies.</span><cite>Glass, Kauffman (1973)</cite></div>
     <div class="ref reveal d3"><b>Karp–Miller coverability</b><span>The helix proof is its deterministic analogue: a repeated pattern whose gain keeps every sign repeats forever.</span><cite>Karp, Miller (1969)</cite></div>
     <div class="ref reveal d4"><b>Basins of attraction</b><span>Started away from zero, basins form sectors (55 %), stripes from conserved functionals (40 %) and parity checkerboards (1 %).</span><cite>computed by this engine</cite></div>
@@ -1154,7 +1178,7 @@ const legendCards = [];
     {k:"cycle", tag:"proof", cert:"<i>v</i>(<i>t</i> + <i>T</i>) = <i>v</i>(<i>t</i>)", cap:"Repeats: the state returns to itself and loops forever."},
     {k:"ray", tag:"proof", cert:"sign <i>d</i> agrees with sign <i>v</i>", cap:"Escapes in a straight line from a quadrant it cannot leave."},
     {k:"helix", tag:"proof", cert:"<i>v</i>(<i>t</i> + <i>T</i>) = <i>v</i>(<i>t</i>) + <i>D</i>", cap:"Escapes while repeating: one segment, shifted every period."},
-    {k:"spiral", tag:"empirical", cert:"‖<i>x</i><sub><i>k</i>+1</sub>‖ &gt; ‖<i>x</i><sub><i>k</i></sub>‖", cap:"Winds outward: each return to the same pattern is larger."},
+    {k:"spiral", tag:"proof", cert:"<i>x</i><sub><i>k</i>+1</sub> = <i>a</i><i>x</i><sub><i>k</i></sub> + <i>b</i> &gt; <i>x</i><sub><i>k</i></sub>", cap:"Winds outward: each return to the same pattern is larger."},
   ];
   const host = document.getElementById("fatesRow");
   P.forEach((p, i) => {
@@ -1219,7 +1243,7 @@ const DESC = {
   cycle: "grouped by period",
   ray: "grouped by the step at which the absorbing quadrant was entered",
   helix: "grouped by the period of the repeating segment",
-  spiral: "one class: returns with growing size (empirical)",
+  spiral: "one class: returns that grow without bound",
 };
 function renderSize(size){
   cards.forEach(c => viewport.unobserve(c.el));
@@ -1262,11 +1286,12 @@ document.querySelectorAll('.tabs button').forEach(btn => btn.addEventListener('c
 renderSize("3");
 
 // ---- §4 your universe ---------------------------------------------------
-// A line-for-line port of the Rust analyser (src/exact.rs, analyze_ws): event-driven, so it jumps from one
-// sign change to the next, and it returns the same proofs with the same budget.
+// A port of the Rust analyser (src/exact.rs, analyze_ws): event-driven, so it jumps from one sign change to
+// the next, and it returns the same proofs with the same budget. The one thing it leaves to Rust is the spiral
+// proof (src/spiral.rs): here a spiral is an orbit that is still growing on every return when the budget runs out.
 function analyze(u, maxEvents = 10000, maxNorm = 2 ** 50){
   const N = u.pos.length;
-  let v = fireAll(u), step = 1, events = 0, top = 0;
+  let v = fireAll(u), step = 1, events = 0, top = 0, lastGrowing = 0;
   const log = [], seen = new Map(), returns = new Map();
   for (;;){
     const s = v.map(Math.sign), sk = s.join(","), d = drift(u, v);
@@ -1289,7 +1314,7 @@ function analyze(u, maxEvents = 10000, maxNorm = 2 ** 50){
     seen.set(key, step); log.push({v: v.slice(), step, s, sk});
     const norm = Math.max(...v.map(Math.abs)), r = returns.get(sk);
     if (!r) returns.set(sk, [norm, 0]);
-    else { r[1] = norm > r[0] ? r[1] + 1 : 0; r[0] = norm; if (r[1] >= 8) return {kind: "spiral", step, returns: r[1]}; }
+    else { r[1] = norm > r[0] ? r[1] + 1 : 0; r[0] = norm; lastGrowing = r[1]; }
     let k = Infinity;
     for (let e = 0; e < N; e++){
       if (s[e] === 0){ if (d[e] !== 0) k = 1; }
@@ -1297,7 +1322,8 @@ function analyze(u, maxEvents = 10000, maxNorm = 2 ** 50){
     }
     for (let e = 0; e < N; e++){ v[e] += k * d[e]; top = Math.max(top, Math.abs(v[e])); }
     step += k;
-    if (++events >= maxEvents || top >= maxNorm) return {kind: "undecided", events, step};
+    if (++events >= maxEvents || top >= maxNorm)
+      return lastGrowing >= 8 ? {kind: "spiral", step, returns: lastGrowing} : {kind: "undecided", events, step};
   }
 }
 const playCards = [];
@@ -1324,7 +1350,7 @@ const playCards = [];
     cycle: v => `After ${fmt(v.transient)} step${v.transient === 1 ? "" : "s"} the state repeats every ${fmt(v.period)} steps. A repeated state is the proof.`,
     ray: v => `From step ${fmt(v.step)} every coordinate moves away from zero, so the velocity (${v.dir.join(", ")}) never changes again.`,
     helix: v => `From step ${fmt(v.step)} a ${v.period}-step segment replays, shifted by (${v.shift.join(", ")}) each time, without any sign changing.`,
-    spiral: v => `It keeps coming back to the same sign pattern, larger every time: ${v.returns} growing returns in a row by step ${fmt(v.step)}. This is the empirical class; nothing proves it diverges.`,
+    spiral: v => `It keeps coming back to the same sign pattern, larger every time: ${fmt(v.returns)} growing returns in a row by step ${fmt(v.step)}. The browser only watches it grow; the Rust CLI runs one lap symbolically and, for all but a few hundred three-element universes, proves it never stops.`,
     undecided: v => `Unproven after ${fmt(v.events)} sign changes (step ${fmt(v.step)}). The engine leaves it open rather than guess.`,
   };
   let link = "";

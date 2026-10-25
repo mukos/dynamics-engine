@@ -92,7 +92,10 @@ fn fates() {
     // extra step per quarter turn, so the integer orbit spirals outward by +1 per quarter.
     let rot = w([[0, 1], [-1, 0]], [[0, -1], [1, 0]]);
     let fate = analyze(&rot, [1, 0], b);
-    assert!(matches!(fate, Fate::Spiral { returns: 8, .. }), "{fate:?}");
+    assert!(
+        matches!(fate, Fate::Spiral { proven: true, .. }),
+        "{fate:?}"
+    );
     // Same system without spiral detection runs out of budget with a growing norm.
     let nb = Budget {
         spiral_returns: 0,
@@ -280,4 +283,130 @@ fn basin_map_features() {
     assert_eq!(m.features.inert, 49);
     assert_eq!(m.features.boundary, 0.0);
     assert_eq!(m.features.conic, 1.0);
+}
+
+/// Spirals are proven by one symbolic lap; growth alone is not enough.
+#[test]
+fn spiral_proofs() {
+    use dynamics_engine::exact::{analyze_universe_ws, Workspace};
+    let b = Budget::default();
+    let fate_and_lap = |index: u64| {
+        let mut ws = Workspace::<3>::new();
+        let fate = analyze_universe_ws(&Reduced::<3>::from_index(index), b, &mut ws);
+        (fate, ws.lap)
+    };
+    // The doubling spiral: returns on a line, x ↦ 2x + 12 per lap.
+    let (fate, lap) = fate_and_lap(27411247);
+    assert!(
+        matches!(fate, Fate::Spiral { proven: true, .. }),
+        "{fate:?}"
+    );
+    let lap = lap.unwrap();
+    assert_eq!(
+        (lap.rank, lap.slope[0][0], lap.off[0], lap.den),
+        (1, 2, 12, 1)
+    );
+    // Additive spiral with a coordinate that only drifts away: x ↦ x + 4, v0 left out.
+    let (fate, lap) = fate_and_lap(7640008);
+    assert!(
+        matches!(fate, Fate::Spiral { proven: true, .. }),
+        "{fate:?}"
+    );
+    assert_eq!(lap.unwrap().steady, 1);
+    // Returns spread over a plane: x₁ ↦ 4x₁ − x₂/2 + 11, x₂ ↦ x₂ − 10.
+    let (fate, lap) = fate_and_lap(13193587);
+    assert!(
+        matches!(fate, Fate::Spiral { proven: true, .. }),
+        "{fate:?}"
+    );
+    assert_eq!(lap.unwrap().rank, 2);
+    // A shear (both eigenvalues 1): polynomial growth, proven on a cone along the eigenvector.
+    let (fate, lap) = fate_and_lap(12130645);
+    assert!(
+        matches!(fate, Fate::Spiral { proven: true, .. }),
+        "{fate:?}"
+    );
+    assert_eq!(lap.unwrap().rank, 2);
+    // Grew for eight returns in a row, then settled: x ↦ 3x/4 + 7 converges. A cycle.
+    assert_eq!(
+        analyze_universe(&Reduced::<3>::from_index(7295755), b),
+        Fate::Cycle {
+            transient: 725,
+            period: 104
+        }
+    );
+    // Growing returns of constant lap length are a translation: a helix, not a spiral.
+    assert!(matches!(
+        analyze_universe(&Reduced::<3>::from_index(5228744), b),
+        Fate::Helix { .. }
+    ));
+    assert!(matches!(
+        analyze_universe(&Reduced::<3>::from_index(7354504), b),
+        Fate::Helix { .. }
+    ));
+}
+
+/// A proven spiral keeps growing when run much longer with spiral detection off.
+#[test]
+fn proven_spirals_keep_growing() {
+    let b = Budget::default();
+    let long = Budget {
+        spiral_returns: 0,
+        max_events: 30_000,
+        max_norm: 1 << 62,
+    };
+    let mut proven = 0;
+    let mut w = Reduced::<3>::from_index(27_000_000);
+    for _ in 0..3_000_000 {
+        if let Fate::Spiral { proven: true, .. } = analyze_universe(&w, b) {
+            proven += 1;
+            let f = analyze_universe(&w, long);
+            assert!(matches!(f, Fate::Undecided { .. }), "{} {f:?}", w.index());
+        }
+        w.increment();
+    }
+    assert!(proven > 100, "{proven}");
+}
+
+#[test]
+fn global_stability() {
+    use dynamics_engine::exact::Workspace;
+    use dynamics_engine::global::{absorbing_pattern, stability, Stability};
+    let b = Budget::default();
+    let mut ws = Workspace::<2>::new();
+    // Every two-element universe is decided: 856 bounded from every start.
+    let mut bounded = 0;
+    for i in 0..Reduced::<2>::count() as u64 {
+        let w = Reduced::<2>::from_index(i);
+        // The closed form: bounded iff no absorbing pattern, except the sign rotation.
+        let formula = absorbing_pattern(&w).is_none() && i != 2800 && i != 3760;
+        let s = stability(&w, b, &mut ws);
+        assert_eq!(matches!(s, Stability::Bounded { .. }), formula, "{i}");
+        match s {
+            Stability::Bounded { .. } => bounded += 1,
+            Stability::Unstable { start, fate } => {
+                assert_eq!(analyze(&w, start, b).bounded(), Some(false), "{i} {fate:?}")
+            }
+            Stability::Open { why } => panic!("{i} open: {why}"),
+        }
+    }
+    assert_eq!(bounded, 856);
+    // The period-10 cycle from the website is bounded from every start ...
+    let w = Reduced::<2>::from_index(613);
+    assert!(matches!(
+        stability(&w, b, &mut ws),
+        Stability::Bounded { .. }
+    ));
+    // ... and a far start in a bounded universe settles.
+    assert_eq!(analyze(&w, [1 << 40, -(1 << 39)], b).bounded(), Some(true));
+    // Universe 2800 is fixed from the all-fire start but spirals out from (−3, −3).
+    let w = Reduced::<2>::from_index(2800);
+    assert!(matches!(analyze_universe(&w, b), Fate::Fixed { .. }));
+    assert!(matches!(
+        stability(&w, b, &mut ws),
+        Stability::Unstable {
+            fate: Fate::Spiral { proven: true, .. },
+            ..
+        }
+    ));
 }

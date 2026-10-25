@@ -1,0 +1,17 @@
+stability, size 1: 9 reduced universes (16 bit matrices) in 0.00s on 8 threads
+
+from every start  reduced universes        bit-matrix weighted
+  bounded                 4  44.444%                      9  56.250%
+  unstable                5  55.556%                      7  43.750%
+
+how instability is proven (reduced universes):
+             5  a sign pattern whose drift keeps every sign (a ray)
+
+all-fire fate vs every start (reduced universes):
+  fate            bounded     unstable         open
+  fixed                 4            1            0
+  ray                   0            4            0
+
+largest start box a proof needed: radius 3
+bounded examples (reduced indices): [1, 2, 4]
+unstable examples (reduced indices): [0, 3, 6, 7, 8]

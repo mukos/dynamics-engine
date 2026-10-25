@@ -1,0 +1,1 @@
+{"size": 1, "reduced": 9, "matrices": 16, "verdicts": {"bounded": [4, 9], "unstable": [5, 7]}, "witnesses": {"absorbing": [5, 7]}, "by_fate": {"fixed": {"bounded": 4, "unstable": 1}, "ray": {"unstable": 4}}, "open_reasons": {}, "max_radius": 3, "examples": {"bounded": [1, 2, 4], "unstable": [0, 3, 6, 7, 8]}}

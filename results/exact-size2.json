@@ -5,6 +5,7 @@
   "matrices": 65536,
   "sampled": false,
   "fates": {"cycle": [88, 352], "fixed": [1485, 19540], "ray": [4988, 45644]},
+  "spirals_proven": [0, 0],
   "classes": [
     {"kind": "fixed", "param": 1, "count": 965, "index": 8, "pos": [[-1,-1],[-1,-1]], "neg": [[-1,-1],[1,1]]},
     {"kind": "fixed", "param": 2, "count": 356, "index": 38, "pos": [[-1,-1],[-1,-1]], "neg": [[0,0],[-1,1]]},

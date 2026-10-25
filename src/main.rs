@@ -3,15 +3,19 @@ use std::process::exit;
 use std::time::{Duration, Instant};
 
 use dynamics_engine::exact::{
-    analyze_clamped_traced, analyze_traced, matrix_orbits, reduced_orbits, Budget, Clamped, Fate,
-    Reduced,
+    analyze_clamped_traced, analyze_ws, matrix_orbits, reduced_orbits, Budget, Clamped, Fate,
+    Reduced, Workspace,
 };
 use dynamics_engine::experiments::{
     basin_map, basin_scan, basins, census_clamped, census_exhaustive, census_sampled, class_name,
-    BasinMap, Basins, Census,
+    stability_census, BasinMap, Basins, Census, StabilityCensus,
 };
+use dynamics_engine::global::{stability, Stability};
 use dynamics_engine::matrix::{enumerable, matrix_count, MAX_CHANNELS};
-use dynamics_engine::multiverse::{exhaustive, sample, sorted, Execution, Exhaustive, Results, Sampled};
+use dynamics_engine::multiverse::{
+    exhaustive, sample, sorted, Execution, Exhaustive, Results, Sampled,
+};
+use dynamics_engine::spiral::Lap;
 use dynamics_engine::universe::{Rules, DEFAULT_MAX_STEPS, MAX_STEPS_CAP};
 
 const USAGE: &str = "Dynamics Engine: exact fates of the discrete dynamical systems
@@ -25,6 +29,7 @@ Commands:
   basins       fates over every start state in a box, per universe
   basinmap     the attractor each start in a box reaches, for one universe (--index)
   basinscan    basin maps and pattern features of every canonical universe
+  stable       is every start bounded? one universe (stable <id>) or a census (--size N)
   orbits       symmetry orbit counts (Burnside)
   run          the original 10-step signature histogram (legacy model)
 
@@ -32,6 +37,8 @@ Examples:
   dynamics-engine show 3-27411247        a spiral whose loop doubles each lap
   dynamics-engine show 2-613             the period-10 cycle from the website
   dynamics-engine exact --size 3         all 387,420,489 three-element universes
+  dynamics-engine stable 2-2800          a spiral that only some starts find
+  dynamics-engine stable --size 2        which universes are bounded from every start
   dynamics-engine exact --size 4 --samples 100000000 --seed 7
 
 A universe id is N-index, the same as the website's #u= links. --size N --index I also works.
@@ -77,6 +84,8 @@ struct Args {
     threads: Option<usize>,
     quiet: bool,
     json: bool,
+    /// A universe id was given (show, stable).
+    one: bool,
 }
 
 fn parse_args() -> Result<Args, String> {
@@ -98,6 +107,7 @@ fn parse_args() -> Result<Args, String> {
         threads: None,
         quiet: false,
         json: false,
+        one: false,
     };
     if std::env::args().len() == 1 {
         println!("{USAGE}");
@@ -147,7 +157,8 @@ fn parse_args() -> Result<Args, String> {
             }
             "--quiet" => args.quiet = true,
             "--json" => args.json = true,
-            id if args.command == "show" && !id.starts_with('-') => {
+            id if ["show", "stable"].contains(&args.command.as_str()) && !id.starts_with('-') => {
+                args.one = true;
                 // "3-27411247" (size-index, as in the website's #u= links) or a bare index.
                 match id.split_once('-') {
                     Some((n, i)) => {
@@ -174,7 +185,10 @@ fn parse_args() -> Result<Args, String> {
     if !["sign", "clamped"].contains(&args.model.as_str()) {
         return Err("--model must be sign or clamped".into());
     }
-    if args.model == "sign" && args.size <= 4 && ["show", "basinmap"].contains(&args.command.as_str()) {
+    if args.model == "sign"
+        && args.size <= 4
+        && (["show", "basinmap"].contains(&args.command.as_str()) || args.one)
+    {
         let count = 3u64.pow(2 * (args.size * args.size) as u32);
         if args.index >= count {
             return Err(format!(
@@ -191,6 +205,7 @@ fn parse_args() -> Result<Args, String> {
         "show",
         "basinmap",
         "basinscan",
+        "stable",
     ]
     .contains(&args.command.as_str())
     {
@@ -270,6 +285,7 @@ fn main() {
         "show" => return cmd_show(&args),
         "basinmap" => return cmd_basinmap(&args),
         "basinscan" => return cmd_basinscan(&args, exec.threads),
+        "stable" => return cmd_stable(&args, exec.threads),
         _ => {}
     }
 
@@ -445,10 +461,22 @@ fn cmd_exact(args: &Args, threads: usize) {
             "\nfixed/ray/helix proven: {within10} of {all} by step 10, latest at step {max_step}\n"
         ));
     }
+    if let Some(&(spirals, _)) = c.fates.get("spiral") {
+        out.push_str(&format!(
+            "\nspirals proven to grow forever: {} of {}\n",
+            c.spirals_proven.0, spirals
+        ));
+    }
     if !c.spiral_examples.is_empty() {
         out.push_str(&format!(
-            "\nspiral examples (reduced indices): {:?}\n",
+            "spiral examples (reduced indices): {:?}\n",
             c.spiral_examples
+        ));
+    }
+    if !c.unproven_spiral_examples.is_empty() {
+        out.push_str(&format!(
+            "unproven spiral examples (reduced indices): {:?}\n",
+            c.unproven_spiral_examples
         ));
     }
     if !c.undecided_examples.is_empty() {
@@ -496,7 +524,10 @@ fn census_json(args: &Args, c: &Census) -> String {
             .collect::<Vec<_>>()
             .join(", "),
     );
-    o.push_str("},\n  \"classes\": [\n");
+    o.push_str(&format!(
+        "}},\n  \"spirals_proven\": [{}, {}],\n  \"classes\": [\n",
+        c.spirals_proven.0, c.spirals_proven.1
+    ));
     let n = c.classes.len();
     for (i, (&(kind, param), &(count, index))) in c.classes.iter().enumerate() {
         let (pos, neg): (Vec<Vec<i8>>, Vec<Vec<i8>>) = if args.model == "clamped" {
@@ -692,6 +723,8 @@ fn cmd_show(args: &Args) {
                 }
             };
             let mut events = String::new();
+            let mut ws = Workspace::<$n>::new();
+            let mut lap_text = String::new();
             let mut trace = |step: u64, v: &[i64; $n], d: &[i64; $n]| {
                 events.push_str(&format!("  step {step:>6}  v = [{} ]  drift = [{} ]\n", fmt(v), fmt(d)));
             };
@@ -721,11 +754,16 @@ fn cmd_show(args: &Args) {
                         fmt(&w.neg[f].map(|x| x as i64))
                     ));
                 }
-                analyze_traced(&w, start_of(w.initial_state()), 1, b, &mut trace)
+                let fate = analyze_ws(&w, start_of(w.initial_state()), 1, b, &mut ws, &mut trace);
+                if let Some(l) = &ws.lap {
+                    lap_text = lap_description(l);
+                }
+                fate
             };
             out.push_str("events:\n");
             out.push_str(&events);
             out.push_str(&format!("fate: {}\n", fate_text(&fate)));
+            out.push_str(&lap_text);
             if args.model == "sign" && args.start.is_none() && (2..=4).contains(&args.size) {
                 out.push_str(&format!(
                     "watch it: https://mukos.github.io/dynamics-engine/#u={}-{}\n",
@@ -747,6 +785,274 @@ fn cmd_show(args: &Args) {
     let _ = std::io::stdout().write_all(out.as_bytes());
 }
 
+/// The proof behind a spiral verdict, in words.
+fn lap_description<const N: usize>(l: &Lap<N>) -> String {
+    let vec = |v: &[i64; N]| {
+        v.iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    let gcd = |mut a: i64, mut b: i64| {
+        (a, b) = (a.abs(), b.abs());
+        while b != 0 {
+            (a, b) = (b, a % b);
+        }
+        a.max(1)
+    };
+    // |num|/den in lowest terms.
+    let rational = |num: i64| {
+        let g = gcd(num, l.den);
+        match (num.abs() / g, l.den / g) {
+            (n, 1) => n.to_string(),
+            (n, d) => format!("{n}/{d}"),
+        }
+    };
+    // Σ coeff·name + constant, skipping zero terms.
+    let affine = |coeffs: &[(i64, &str)], constant: i64| {
+        let mut out = String::new();
+        for &(c, name) in coeffs.iter().filter(|(c, _)| *c != 0) {
+            let sign = if out.is_empty() {
+                if c < 0 {
+                    "−"
+                } else {
+                    ""
+                }
+            } else if c < 0 {
+                " − "
+            } else {
+                " + "
+            };
+            let r = rational(c);
+            out += &format!(
+                "{sign}{}{name}",
+                if r == "1" {
+                    String::new()
+                } else {
+                    format!("{r}·")
+                }
+            );
+        }
+        if constant != 0 || out.is_empty() {
+            let sign = match (out.is_empty(), constant < 0) {
+                (true, true) => "−",
+                (true, false) => "",
+                (false, true) => " − ",
+                (false, false) => " + ",
+            };
+            out += &format!("{sign}{}", rational(constant));
+        }
+        out
+    };
+    let steady: Vec<String> = (0..N)
+        .filter(|&e| l.steady >> e & 1 == 1)
+        .map(|e| format!("v{e}"))
+        .collect();
+    let steady = if steady.is_empty() {
+        String::new()
+    } else {
+        format!(" ({} keeps its sign and is left out)", steady.join(", "))
+    };
+    let states = format!(
+        "{} state{} (mod {})",
+        l.classes,
+        if l.classes == 1 { "" } else { "s" },
+        if l.rank == 1 {
+            l.modulus[0].to_string()
+        } else {
+            format!("{}×{}", l.modulus[0], l.modulus[1])
+        }
+    );
+    if l.rank == 1 {
+        format!(
+            "proof: returns lie on ({}) + x·({}){steady}; one lap ({} events) maps x ↦ {}, outward on all {states}\n",
+            vec(&l.base),
+            vec(&l.dir[0]),
+            l.events,
+            affine(&[(l.slope[0][0], "x")], l.off[0]),
+        )
+    } else {
+        let row = |i: usize| affine(&[(l.slope[i][0], "x₁"), (l.slope[i][1], "x₂")], l.off[i]);
+        format!(
+            "proof: returns lie on the plane ({}) + x₁·({}) + x₂·({}); one lap ({} events) maps x₁ ↦ {}, x₂ ↦ {}, into a growing cone on all {states}\n",
+            vec(&l.base),
+            vec(&l.dir[0]),
+            vec(&l.dir[1]),
+            l.events,
+            row(0),
+            row(1),
+        )
+    }
+}
+
+fn cmd_stable(args: &Args, threads: usize) {
+    let b = budget(args);
+    if args.model != "sign" {
+        eprintln!("error: stable supports the sign model only");
+        exit(2);
+    }
+    if args.one {
+        if args.size > 4 {
+            eprintln!("error: stable supports sizes 1 to 4");
+            exit(2);
+        }
+        let id = format!("{}-{}", args.size, args.index);
+        let text = with_channels!(args.size, C => {
+            let w = Reduced::<{ C / 2 }>::from_index(args.index);
+            let mut ws = Workspace::new();
+            let all_fire = analyze_ws(&w, w.initial_state(), 1, b, &mut ws, &mut |_, _, _| {});
+            let mut out = format!("universe {id}: ");
+            match stability(&w, b, &mut ws) {
+                Stability::Unstable { start, fate } => {
+                    let s = start.iter().map(|x| x.to_string()).collect::<Vec<_>>();
+                    out.push_str(&format!(
+                        "unstable\n  from start ({}): {}\n  see it: dynamics-engine show {id} --start {}\n",
+                        s.join(", "),
+                        fate_text(&fate),
+                        s.join(",")
+                    ));
+                }
+                Stability::Bounded { radius, nodes, cycles } => {
+                    out.push_str("bounded from every start\n");
+                    if nodes > 0 {
+                        let loops = match cycles {
+                            0 => "those maps form no loop".to_string(),
+                            1 => "their one loop does not expand".to_string(),
+                            n => format!("none of their {n} loops expands"),
+                        };
+                        out.push_str(&format!(
+                            "  proof: far from the origin, the {nodes} axis states (one coordinate small, one large) \
+        lead to each other by affine maps of the large one; {loops}; and every start in [-{radius}, {radius}]^2 \
+        is fixed or a cycle\n"
+                        ));
+                    } else {
+                        out.push_str(&format!(
+                            "  proof: no sign pattern is absorbing, so every state heads to [-{radius}, {radius}], where every start settles\n"
+                        ));
+                    }
+                }
+                Stability::Open { why } => {
+                    out.push_str(&format!("open: no start tried escapes, but there is no proof ({why})\n"));
+                }
+            }
+            out.push_str(&format!("  the all-fire start: {}\n", fate_text(&all_fire)));
+            out
+        });
+        print!("{text}");
+        return;
+    }
+    if args.size > 3 {
+        eprintln!("error: stable --size supports sizes 1 to 3 (it analyses every universe)");
+        exit(2);
+    }
+    let started = Instant::now();
+    let c: StabilityCensus =
+        with_channels!(args.size, C => stability_census::<{ C / 2 }>(b, threads));
+    let elapsed = started.elapsed().as_secs_f64();
+    if args.json {
+        let pairs = |m: &std::collections::BTreeMap<&'static str, (u64, u128)>| {
+            m.iter()
+                .map(|(k, (r, w))| format!("\"{k}\": [{r}, {w}]"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        };
+        let mut fates: Vec<&str> = c.by_fate.keys().map(|(f, _)| *f).collect();
+        fates.dedup();
+        let by_fate = fates
+            .iter()
+            .map(|f| {
+                let row = c
+                    .by_fate
+                    .iter()
+                    .filter(|((g, _), _)| g == f)
+                    .map(|((_, v), n)| format!("\"{v}\": {n}"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("\"{f}\": {{{row}}}")
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        let examples = c
+            .examples
+            .iter()
+            .map(|(k, v)| format!("\"{k}\": {v:?}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let reasons = c
+            .open_reasons
+            .iter()
+            .map(|(k, n)| format!("\"{k}\": {n}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        println!(
+            "{{\"size\": {}, \"reduced\": {}, \"matrices\": {}, \"verdicts\": {{{}}}, \"witnesses\": {{{}}}, \
+\"by_fate\": {{{by_fate}}}, \"open_reasons\": {{{reasons}}}, \"max_radius\": {}, \"examples\": {{{examples}}}}}",
+            args.size,
+            c.reduced,
+            c.matrices,
+            pairs(&c.verdicts),
+            pairs(&c.witnesses),
+            c.max_radius
+        );
+        return;
+    }
+    let mut out = format!(
+        "stability, size {}: {} reduced universes ({} bit matrices) in {elapsed:.2}s on {threads} threads\n",
+        args.size, c.reduced, c.matrices
+    );
+    out.push_str("\nfrom every start  reduced universes        bit-matrix weighted\n");
+    for (k, (r, m)) in &c.verdicts {
+        out.push_str(&format!(
+            "  {k:<10} {r:>14} {:>7.3}% {m:>22} {:>7.3}%\n",
+            100.0 * *r as f64 / c.reduced.max(1) as f64,
+            100.0 * *m as f64 / c.matrices.max(1) as f64
+        ));
+    }
+    out.push_str("\nhow instability is proven (reduced universes):\n");
+    for (k, (r, _)) in &c.witnesses {
+        let label = match *k {
+            "absorbing" => "a sign pattern whose drift keeps every sign (a ray)",
+            "helix" => "a start that becomes a helix",
+            "spiral" => "a start that becomes a proven spiral",
+            "ray" => "a start that becomes a ray",
+            other => other,
+        };
+        out.push_str(&format!("  {r:>12}  {label}\n"));
+    }
+    out.push_str("\nall-fire fate vs every start (reduced universes):\n");
+    out.push_str(&format!(
+        "  {:<10} {:>12} {:>12} {:>12}\n",
+        "fate", "bounded", "unstable", "open"
+    ));
+    let mut fates: Vec<&str> = c.by_fate.keys().map(|(f, _)| *f).collect();
+    fates.dedup();
+    for f in fates {
+        let get = |v: &str| c.by_fate.get(&(f, v)).copied().unwrap_or(0);
+        out.push_str(&format!(
+            "  {f:<10} {:>12} {:>12} {:>12}\n",
+            get("bounded"),
+            get("unstable"),
+            get("open")
+        ));
+    }
+    if !c.open_reasons.is_empty() {
+        out.push_str("\nopen (no start tried escapes, no proof), in symmetry classes:\n");
+        for (k, n) in &c.open_reasons {
+            out.push_str(&format!("  {n:>12}  {k}\n"));
+        }
+    }
+    if c.max_radius > 0 {
+        out.push_str(&format!(
+            "\nlargest start box a proof needed: radius {}\n",
+            c.max_radius
+        ));
+    }
+    for (k, v) in &c.examples {
+        out.push_str(&format!("{k} examples (reduced indices): {v:?}\n"));
+    }
+    print!("{out}");
+}
+
 fn fate_text(fate: &Fate) -> String {
     match *fate {
         Fate::Fixed { step } => format!("fixed, the velocity reaches zero at step {step}"),
@@ -757,7 +1063,14 @@ fn fate_text(fate: &Fate) -> String {
         Fate::Helix { step, period, shift_norm } => format!(
             "helix, from step {step} a {period}-step segment repeats shifted by a vector of size {shift_norm}"
         ),
-        Fate::Spiral { returns, max_norm } => format!(
+        Fate::Spiral {
+            returns,
+            max_norm,
+            proven: true,
+        } => format!("spiral, proven to grow forever after {returns} growing returns, |v| up to {max_norm}"),
+        Fate::Spiral {
+            returns, max_norm, ..
+        } => format!(
             "spiral (empirical), {returns} growing returns in a row, |v| up to {max_norm}"
         ),
         Fate::Undecided { events, max_norm } => {

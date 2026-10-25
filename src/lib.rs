@@ -7,8 +7,10 @@
 
 pub mod exact;
 pub mod experiments;
+pub mod global;
 pub mod matrix;
 pub mod multiverse;
 pub mod parallel;
 pub mod rng;
+pub mod spiral;
 pub mod universe;

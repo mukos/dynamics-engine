@@ -1,0 +1,20 @@
+stability, size 2: 6561 reduced universes (65536 bit matrices) in 0.01s on 8 threads
+
+from every start  reduced universes        bit-matrix weighted
+  bounded               856  13.047%                   9576  14.612%
+  unstable             5705  86.953%                  55960  85.388%
+
+how instability is proven (reduced universes):
+          5703  a sign pattern whose drift keeps every sign (a ray)
+             2  a start that becomes a proven spiral
+
+all-fire fate vs every start (reduced universes):
+  fate            bounded     unstable         open
+  cycle                72           16            0
+  fixed               784          701            0
+  ray                   0         4988            0
+
+largest start box a proof needed: radius 13
+bounded examples (reduced indices): [8, 32, 35, 38, 40, 41, 44, 56, 59, 62]
+spiral examples (reduced indices): [2800]
+unstable examples (reduced indices): [0, 1, 2, 3, 4, 5, 6, 7, 9, 10]

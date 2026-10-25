@@ -42,6 +42,10 @@ pub struct Census {
     pub undecided_examples: Vec<u64>,
     /// Spiral example indices (first few).
     pub spiral_examples: Vec<u64>,
+    /// Spirals with a proof that they grow forever: (reduced count, matrix-weighted count).
+    pub spirals_proven: (u64, u128),
+    /// Spirals without a proof (first few indices).
+    pub unproven_spiral_examples: Vec<u64>,
     /// Fine classes: (kind code, parameter) -> (count, smallest index). Kind codes: 0 fixed@step,
     /// 1 cycle@period, 2 ray@step, 3 helix@period, 4 spiral, 5 undecided.
     pub classes: BTreeMap<(u8, u64), (u64, u64)>,
@@ -85,6 +89,8 @@ struct Acc {
     longest_cycle: (u64, u64),
     undecided_examples: Vec<u64>,
     spiral_examples: Vec<u64>,
+    spirals_proven: (u64, u128),
+    unproven_spiral_examples: Vec<u64>,
     confusion: BTreeMap<(&'static str, &'static str), u128>,
 }
 
@@ -101,6 +107,8 @@ impl Acc {
             longest_cycle: (0, 0),
             undecided_examples: Vec::new(),
             spiral_examples: Vec::new(),
+            spirals_proven: (0, 0),
+            unproven_spiral_examples: Vec::new(),
             confusion: BTreeMap::new(),
         }
     }
@@ -134,6 +142,11 @@ impl Acc {
         self.undecided_examples.truncate(10);
         self.spiral_examples.extend(o.spiral_examples);
         self.spiral_examples.truncate(10);
+        self.spirals_proven.0 += o.spirals_proven.0;
+        self.spirals_proven.1 += o.spirals_proven.1;
+        self.unproven_spiral_examples
+            .extend(o.unproven_spiral_examples);
+        self.unproven_spiral_examples.truncate(10);
         for (k, n) in o.confusion {
             *self.confusion.entry(k).or_insert(0) += n;
         }
@@ -190,9 +203,15 @@ impl Acc {
                 }
                 None
             }
-            Fate::Spiral { .. } => {
+            Fate::Spiral { proven, .. } => {
                 if self.spiral_examples.len() < 10 {
                     self.spiral_examples.push(index);
+                }
+                if proven {
+                    self.spirals_proven.0 += 1;
+                    self.spirals_proven.1 += mult;
+                } else if self.unproven_spiral_examples.len() < 10 {
+                    self.unproven_spiral_examples.push(index);
                 }
                 None
             }
@@ -220,6 +239,8 @@ impl From<Acc> for Census {
             longest_cycle: a.longest_cycle,
             undecided_examples: a.undecided_examples,
             spiral_examples: a.spiral_examples,
+            spirals_proven: a.spirals_proven,
+            unproven_spiral_examples: a.unproven_spiral_examples,
             ..Census::default()
         };
         for (k, &(r, m)) in a.fates.iter().enumerate() {
@@ -731,4 +752,178 @@ pub fn basin_scan<const N: usize>(
     maps.sort_by_key(|m| m.index);
     maps.dedup_by_key(|m| m.index);
     maps
+}
+
+// ---------------------------------------------------------------------------
+// Global stability: bounded from every start?
+
+use crate::exact::for_each_signed_permutation;
+use crate::global::{absorbing_pattern, stability, Stability};
+
+/// Global stability of every reduced universe, cross-tabulated with the fate of
+/// the all-fire start.
+#[derive(Default, Clone, Debug)]
+pub struct StabilityCensus {
+    pub reduced: u64,
+    pub matrices: u128,
+    /// verdict ("bounded", "unstable", "open") -> (reduced count, matrix-weighted count).
+    pub verdicts: BTreeMap<&'static str, (u64, u128)>,
+    /// How instability was shown: "absorbing" (a sign pattern whose drift keeps
+    /// every sign) or the witness fate kind -> (reduced, weighted).
+    pub witnesses: BTreeMap<&'static str, (u64, u128)>,
+    /// (all-fire fate kind, verdict) -> reduced count.
+    pub by_fate: BTreeMap<(&'static str, &'static str), u64>,
+    /// Why open universes have no proof -> reduced count.
+    pub open_reasons: BTreeMap<&'static str, u64>,
+    /// Largest box radius a boundedness proof needed.
+    pub max_radius: i64,
+    /// First few indices per verdict / witness kind.
+    pub examples: BTreeMap<&'static str, Vec<u64>>,
+}
+
+impl StabilityCensus {
+    /// Record a universe standing for `copies` symmetric ones (fates and
+    /// stability are invariant under signed permutations, and so is the multiplicity).
+    fn add(
+        &mut self,
+        index: u64,
+        copies: u64,
+        mult: u64,
+        fate: &'static str,
+        s: &Stability<8>,
+        absorbing: bool,
+    ) {
+        let verdict = s.kind();
+        let weight = copies as u128 * mult as u128;
+        self.reduced += copies;
+        self.matrices += weight;
+        let v = self.verdicts.entry(verdict).or_default();
+        v.0 += copies;
+        v.1 += weight;
+        *self.by_fate.entry((fate, verdict)).or_insert(0) += copies;
+        let mut example = |key| {
+            let ex = self.examples.entry(key).or_default();
+            if ex.len() < 10 {
+                ex.push(index);
+            }
+        };
+        example(verdict);
+        match s {
+            Stability::Unstable { fate: wf, .. } => {
+                let how = if absorbing { "absorbing" } else { wf.kind() };
+                let e = self.witnesses.entry(how).or_default();
+                e.0 += copies;
+                e.1 += weight;
+                if how == "spiral" || how == "helix" {
+                    example(how);
+                }
+            }
+            Stability::Bounded { radius, .. } => self.max_radius = self.max_radius.max(*radius),
+            Stability::Open { why } => *self.open_reasons.entry(why).or_insert(0) += 1,
+        }
+    }
+
+    fn merge(&mut self, o: StabilityCensus) {
+        self.reduced += o.reduced;
+        self.matrices += o.matrices;
+        for (k, (a, b)) in o.verdicts {
+            let e = self.verdicts.entry(k).or_default();
+            e.0 += a;
+            e.1 += b;
+        }
+        for (k, (a, b)) in o.witnesses {
+            let e = self.witnesses.entry(k).or_default();
+            e.0 += a;
+            e.1 += b;
+        }
+        for (k, n) in o.by_fate {
+            *self.by_fate.entry(k).or_insert(0) += n;
+        }
+        for (k, n) in o.open_reasons {
+            *self.open_reasons.entry(k).or_insert(0) += n;
+        }
+        self.max_radius = self.max_radius.max(o.max_radius);
+        for (k, v) in o.examples {
+            let e = self.examples.entry(k).or_default();
+            e.extend(v);
+            e.sort();
+            e.truncate(10);
+        }
+    }
+}
+
+/// [`Stability`] with the start widened to 8 coordinates, so one census type serves every N.
+fn widen<const N: usize>(s: Stability<N>) -> Stability<8> {
+    match s {
+        Stability::Unstable { start, fate } => Stability::Unstable {
+            start: std::array::from_fn(|e| if e < N { start[e] } else { 0 }),
+            fate,
+        },
+        Stability::Bounded {
+            radius,
+            nodes,
+            cycles,
+        } => Stability::Bounded {
+            radius,
+            nodes,
+            cycles,
+        },
+        Stability::Open { why } => Stability::Open { why },
+    }
+}
+
+/// `Some(orbit size)` if `w` is the canonical member of its symmetry orbit.
+fn canonical_orbit<const N: usize>(w: &Reduced<N>) -> Option<u64> {
+    let (mut smaller, mut stabilizer, mut order) = (false, 0u64, 0u64);
+    for_each_signed_permutation::<N>(|perm, flip| {
+        let t = w.transform(perm, flip);
+        order += 1;
+        smaller |= t < *w;
+        stabilizer += (t == *w) as u64;
+    });
+    (!smaller).then(|| order / stabilizer)
+}
+
+/// Is every reduced universe with `N` elements bounded from every start?
+/// Universes with an absorbing sign pattern are settled on the spot; the rest
+/// are analysed once per symmetry orbit.
+pub fn stability_census<const N: usize>(budget: Budget, threads: usize) -> StabilityCensus {
+    let count = Reduced::<N>::count();
+    assert!(
+        count <= u64::MAX as u128,
+        "too many reduced universes to enumerate"
+    );
+    par_chunks(
+        count as u64,
+        threads,
+        StabilityCensus::default,
+        |first, len, acc| {
+            let mut ws = Workspace::<N>::new();
+            let mut w = Reduced::<N>::from_index(first);
+            for k in first..first + len {
+                // An absorbing sign pattern settles it without running anything.
+                let pattern = absorbing_pattern(&w);
+                let (s, copies) = match pattern {
+                    Some(p) => (
+                        Stability::Unstable {
+                            start: std::array::from_fn(|e| if e < N { p[e] as i64 } else { 0 }),
+                            fate: Fate::Ray { step: 0 },
+                        },
+                        1,
+                    ),
+                    None => match canonical_orbit(&w) {
+                        Some(copies) => (widen(stability(&w, budget, &mut ws)), copies),
+                        None => {
+                            w.increment();
+                            continue;
+                        }
+                    },
+                };
+                let fate = analyze_universe_ws(&w, budget, &mut ws).kind();
+                acc.add(k, copies, w.multiplicity(), fate, &s, pattern.is_some());
+                w.increment();
+            }
+        },
+        StabilityCensus::merge,
+    )
 }

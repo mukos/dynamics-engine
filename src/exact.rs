@@ -21,13 +21,17 @@
 //!   divergence, no step limit needed.
 //! * **Cycle**: an event state repeats, so the trajectory is eventually periodic.
 //!
-//! What is left (`Undecided`) is a trajectory that keeps switching orthants
-//! with growing norm — the discrete analogue of an expanding spiral.
+//! Two more fates are proven by replay: a **helix** (a segment repeats shifted by
+//! a fixed vector) and a **spiral** (one lap of a loop, run symbolically, maps a
+//! whole family of return states outward onto itself; see [`crate::spiral`]).
+//! What is left (`Undecided`) is a trajectory that runs out of budget.
 
 // Index loops mirror the matrix formulas and read better than zipped iterators here.
 #![allow(clippy::needless_range_loop)]
 
 use std::collections::HashMap;
+
+use crate::spiral::{self, Lap};
 
 /// Event callback: `(step, state, drift)`.
 pub type Trace<'a, const N: usize> = &'a mut dyn FnMut(u64, &[i64; N], &[i64; N]);
@@ -344,9 +348,14 @@ pub enum Fate {
         period: u64,
         shift_norm: i64,
     },
-    /// Empirical: the trajectory keeps returning to the same orthant with strictly
-    /// growing norm (checked over `returns` consecutive returns). Not a proof.
-    Spiral { returns: u64, max_norm: i64 },
+    /// The trajectory keeps returning to the same orthant with strictly growing
+    /// norm (`returns` consecutive growing returns). With `proven`, one symbolic
+    /// lap shows it grows forever ([`crate::spiral`]); otherwise it is empirical.
+    Spiral {
+        returns: u64,
+        max_norm: i64,
+        proven: bool,
+    },
     /// No certificate within the budget; the norm reached `max_norm` after `events` orthant changes.
     Undecided { events: u64, max_norm: i64 },
 }
@@ -368,7 +377,9 @@ impl Fate {
     pub fn bounded(&self) -> Option<bool> {
         match self {
             Fate::Fixed { .. } | Fate::Cycle { .. } => Some(true),
-            Fate::Ray { .. } | Fate::Helix { .. } => Some(false),
+            Fate::Ray { .. } | Fate::Helix { .. } | Fate::Spiral { proven: true, .. } => {
+                Some(false)
+            }
             Fate::Spiral { .. } | Fate::Undecided { .. } => None,
         }
     }
@@ -404,6 +415,8 @@ pub struct Workspace<const N: usize> {
     /// state, the smallest event state of the cycle, the ray's drift, or the
     /// helix shift. Empty for spirals and undecided runs.
     pub attractor: Vec<i64>,
+    /// The proven lap when the last analysis ended in a proven spiral.
+    pub lap: Option<Lap<N>>,
 }
 
 impl<const N: usize> Workspace<N> {
@@ -416,6 +429,7 @@ impl<const N: usize> Workspace<N> {
         self.seen.clear();
         self.returns.clear();
         self.attractor.clear();
+        self.lap = None;
     }
 }
 
@@ -454,32 +468,59 @@ fn helix_shift<const N: usize>(
     None
 }
 
-/// Track returns to each pattern; report a spiral once some pattern has been
-/// re-entered `needed` consecutive times with strictly growing max-norm.
-fn spiral_return<const N: usize>(
+/// The last growing return at which a spiral proof is attempted; a spiral that
+/// resists that long is not going to fall to a later attempt (powers of two only).
+const MAX_ATTEMPT: u64 = 64;
+
+/// Track returns to each pattern: how many consecutive times this pattern has
+/// been re-entered with strictly growing max-norm.
+fn growing_returns<const N: usize>(
     returns: &mut HashMap<[i8; N], (i64, u64)>,
     pattern: &[i8; N],
     v: &[i64; N],
-    needed: u64,
-    max_norm: i64,
-) -> Option<Fate> {
+) -> u64 {
     let norm = v.iter().map(|x| x.abs()).max().unwrap_or(0);
     match returns.get_mut(pattern) {
         None => {
             returns.insert(*pattern, (norm, 0));
+            0
         }
         Some(entry) => {
             entry.1 = if norm > entry.0 { entry.1 + 1 } else { 0 };
             entry.0 = norm;
-            if entry.1 >= needed {
-                return Some(Fate::Spiral {
-                    returns: entry.1,
-                    max_norm: max_norm.max(norm),
-                });
+            entry.1
+        }
+    }
+}
+
+/// Try to prove a spiral from the latest logged returns to `pattern`: up to
+/// [`spiral::RETURNS`] of them, and which coordinates kept their (nonzero) sign
+/// at every event since the oldest.
+fn prove_spiral<const N: usize>(
+    w: &Reduced<N>,
+    log: &[([i64; N], u64, [i8; N])],
+    pattern: &[i8; N],
+    plane: bool,
+) -> Option<Lap<N>> {
+    let mut found = [[0i64; N]; spiral::RETURNS];
+    let mut steady: [bool; N] = std::array::from_fn(|e| pattern[e] != 0);
+    let mut n = 0;
+    for (u, _, p) in log.iter().rev() {
+        for e in 0..N {
+            steady[e] &= p[e] == pattern[e];
+        }
+        if p == pattern {
+            n += 1;
+            found[spiral::RETURNS - n] = *u;
+            if n == spiral::RETURNS {
+                break;
             }
         }
     }
-    None
+    if n < 3 {
+        return None;
+    }
+    spiral::prove(w, pattern, &steady, &found[spiral::RETURNS - n..], plane)
 }
 
 #[inline]
@@ -539,6 +580,7 @@ pub fn analyze_ws<const N: usize>(
     let mut step = start_step;
     let mut events = 0u64;
     let mut max_norm = 0i64;
+    let mut last_growing = 0u64;
     ws.clear();
     // Event log: (state, step, sign pattern). Short trajectories dominate, so
     // cycle detection scans the log until it is long enough to justify a map.
@@ -547,6 +589,7 @@ pub fn analyze_ws<const N: usize>(
         seen,
         returns,
         attractor,
+        lap,
     } = ws;
     loop {
         let s = signum(&v);
@@ -604,8 +647,22 @@ pub fn analyze_ws<const N: usize>(
         }
         log.push((v, step, s));
         if budget.spiral_returns > 0 {
-            if let Some(f) = spiral_return(returns, &s, &v, budget.spiral_returns, max_norm) {
-                return f;
+            let growing = growing_returns(returns, &s, &v);
+            last_growing = growing;
+            // From the third growing return on, try to prove the spiral (at
+            // powers of two once it has been failing, up to MAX_ATTEMPT).
+            if growing >= 2 && (growing <= 4 || growing.is_power_of_two()) && growing <= MAX_ATTEMPT
+            {
+                // Two-parameter families from the fourth return: they cost more.
+                let plane = growing >= 4 && growing.is_power_of_two();
+                if let Some(proof) = prove_spiral(w, log, &s, plane) {
+                    *lap = Some(proof);
+                    return Fate::Spiral {
+                        returns: growing,
+                        max_norm,
+                        proven: true,
+                    };
+                }
             }
         }
         // Steps until some coordinate changes sign (or leaves zero).
@@ -627,6 +684,14 @@ pub fn analyze_ws<const N: usize>(
         step += k;
         events += 1;
         if events >= budget.max_events || max_norm >= budget.max_norm {
+            // Out of budget. Still growing on every return: call it an (unproven) spiral.
+            if budget.spiral_returns > 0 && last_growing >= budget.spiral_returns {
+                return Fate::Spiral {
+                    returns: last_growing,
+                    max_norm,
+                    proven: false,
+                };
+            }
             return Fate::Undecided { events, max_norm };
         }
     }
@@ -717,6 +782,7 @@ pub fn analyze_clamped_ws<const N: usize>(
         seen,
         returns,
         attractor,
+        ..
     } = ws;
     loop {
         let d = c.drift(&v);
@@ -775,8 +841,13 @@ pub fn analyze_clamped_ws<const N: usize>(
         }
         log.push((v, step, support));
         if budget.spiral_returns > 0 {
-            if let Some(f) = spiral_return(returns, &support, &v, budget.spiral_returns, max_norm) {
-                return f;
+            let growing = growing_returns(returns, &support, &v);
+            if growing >= budget.spiral_returns {
+                return Fate::Spiral {
+                    returns: growing,
+                    max_norm,
+                    proven: false,
+                };
             }
         }
         let mut k = u64::MAX;
